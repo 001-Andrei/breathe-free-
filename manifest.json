@@ -1,0 +1,19 @@
+{
+  "name": "Дыши свободно",
+  "short_name": "Дыши",
+  "description": "Бросить курить с помощью КПТ",
+  "start_url": "/breathe-free-/",
+  "scope": "/breathe-free-/",
+  "display": "standalone",
+  "background_color": "#0C1B16",
+  "theme_color": "#0C1B16",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
