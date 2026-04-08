@@ -1,12 +1,12 @@
 <!DOCTYPE html><html lang="ru"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Дыши"><meta name="theme-color" content="#0C1B16">
+<meta name="apple-mobile-web-app-title" content="Дыши"><meta name="theme-color" content="#F4F8FF">
 <title>Дыши свободно</title><link rel="apple-touch-icon" href="icon.png"><link rel="manifest" href="manifest.json">
 <style>
-:root{--bg:#0C1B16;--card:#142B22;--cl:#1A3A2D;--ac:#4ADE80;--ad:#22703F;--ag:rgba(74,222,128,.15);--w:#F59E0B;--dg:#EF4444;--tx:#E8F5EC;--td:#7CA88E;--tm:#4A7A5E;--bd:#1E4432;--sb:env(safe-area-inset-bottom,20px)}
+:root{--bg:#F4F8FF;--card:#FFFFFF;--cl:#EAF2FF;--ac:#10B981;--ad:#059669;--ag:rgba(16,185,129,.14);--w:#F59E0B;--dg:#DC2626;--tx:#0F172A;--td:#475569;--tm:#64748B;--bd:#D8E3F3;--sb:env(safe-area-inset-bottom,20px)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{background:var(--bg);color:var(--tx);font-family:'SF Pro Display',-apple-system,'Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100dvh}
+html,body{background:linear-gradient(180deg,#F8FBFF 0%,var(--bg) 100%);color:var(--tx);font-family:'SF Pro Display',-apple-system,'Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100dvh;font-size:17px;line-height:1.35}
 body{max-width:430px;margin:0 auto;padding-top:env(safe-area-inset-top,0)}
 input,button{font-family:inherit}input[type=range]{width:100%;height:6px;accent-color:var(--w)}::-webkit-scrollbar{display:none}
 @keyframes fi{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -17,7 +17,7 @@ input,button{font-family:inherit}input[type=range]{width:100%;height:6px;accent-
 .bcta{width:100%;padding:18px 0;border-radius:16px;border:none;background:linear-gradient(135deg,var(--w),#F97316);color:#fff;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(245,158,11,.3)}
 .bcta:active{transform:scale(.98)}
 .inp{width:100%;padding:14px 16px;border-radius:14px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:17px;outline:none;-webkit-appearance:none}
-.cd{padding:20px;border-radius:16px;background:var(--card);border:1px solid var(--bd)}
+.cd{padding:20px;border-radius:18px;background:var(--card);border:1px solid var(--bd);box-shadow:0 8px 24px rgba(15,23,42,.05)}
 .ch{padding:8px 14px;border-radius:20px;border:1.5px solid var(--bd);background:transparent;color:var(--td);font-size:13px;cursor:pointer}
 .ch.on{border-color:var(--w);background:rgba(245,158,11,.12);color:var(--w)}
 .cr{padding:10px 18px;border-radius:24px;border:2px solid var(--bd);background:transparent;color:var(--td);font-size:15px;cursor:pointer}
@@ -27,13 +27,13 @@ input,button{font-family:inherit}input[type=range]{width:100%;height:6px;accent-
 .cb{width:52px;height:52px;border-radius:14px;border:1px solid var(--bd);background:var(--cl);color:var(--tx);font-size:24px;cursor:pointer}
 .cb:active{background:var(--bd)}
 .sos{width:100%;padding:18px 0;border-radius:16px;border:none;background:linear-gradient(135deg,var(--dg),#DC2626);color:#fff;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(239,68,68,.3)}
-.tb{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:100;background:linear-gradient(to top,var(--bg),rgba(12,27,22,.94),transparent);padding-top:20px}
-.tbi{display:flex;justify-content:space-around;padding:10px 8px;padding-bottom:max(14px,var(--sb));background:var(--card);border-top:1px solid var(--bd)}
+.tb{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:100;background:linear-gradient(to top,var(--bg),rgba(244,248,255,.92),transparent);padding-top:20px}
+.tbi{display:flex;justify-content:space-around;padding:10px 8px;padding-bottom:max(14px,var(--sb));background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-top:1px solid var(--bd)}
 .tbb{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 12px;color:var(--tm)}
 .tbb.on{color:var(--ac)}.tbb span:first-child{font-size:22px}.tbb span:last-child{font-size:10px;font-weight:600;letter-spacing:.5px}
 .mb{flex:1;padding:16px 12px;border-radius:14px;cursor:pointer;text-align:left}
 .dmg{padding:16px 18px;border-radius:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15)}
-.bo{position:fixed;inset:0;z-index:1000;background:rgba(12,27,22,.97);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.bo{position:fixed;inset:0;z-index:1000;background:rgba(241,245,249,.95);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .bc{border-radius:50%;background:radial-gradient(circle,var(--ag),transparent);border:3px solid var(--ac);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 4s ease-in-out}
 .at{position:fixed;top:calc(20px + env(safe-area-inset-top,0));left:20px;right:20px;z-index:900;padding:18px 20px;border-radius:16px;background:linear-gradient(135deg,var(--card),var(--cl));border:2px solid rgba(74,222,128,.3);box-shadow:0 8px 32px var(--ag);display:flex;align-items:center;gap:14px;max-width:390px;margin:0 auto;animation:sd .4s ease}
 .pbar{height:6px;border-radius:3px;background:var(--bd);overflow:hidden}.pfill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--ac),#34D399);transition:width 1s}
@@ -63,6 +63,7 @@ function ld(){try{let v;v=localStorage.getItem("qp");if(v)P=JSON.parse(v);v=loca
 const $=id=>document.getElementById(id);
 const qm=()=>!!Q;
 function fmt(m){if(m<60)return m+" мин";if(m<1440)return Math.floor(m/60)+" ч "+m%60+" мин";return Math.floor(m/1440)+" д "+Math.floor((m%1440)/60)+" ч";}
+function ensureDailyReset(){const today=new Date().toDateString();if(td!==today){tc=0;td=today;dl[new Date().toISOString().split("T")[0]]=0;sv();}}
 
 // ═══ INIT ═══
 ld();
@@ -88,7 +89,7 @@ function startApp(){buildUI();render();setInterval(render,60000);setInterval(()=
 function buildUI(){
 const tabs=qm()?`<button class="tbb on" onclick="go('home')" id="b_home"><span>🏠</span><span>Главная</span></button><button class="tbb" onclick="go('health')" id="b_health"><span>🫁</span><span>Здоровье</span></button><button class="tbb" onclick="go('tools')" id="b_tools"><span>🧠</span><span>КПТ</span></button><button class="tbb" onclick="go('stats')" id="b_stats"><span>📊</span><span>Журнал</span></button><button class="tbb" onclick="go('awards')" id="b_awards"><span>🏆</span><span>Награды</span></button>`
 :`<button class="tbb on" onclick="go('th')" id="b_th"><span>🏠</span><span>Главная</span></button><button class="tbb" onclick="go('stats')" id="b_stats"><span>📊</span><span>Журнал</span></button>`;
-$("R").innerHTML=`<div id="V" style="padding-bottom:100px"></div><div class="tb"><div class="tbi">${tabs}</div></div><div id="BO" class="bo hd" onclick="stopB()"><div id="bcy" style="font-size:14px;color:var(--tm);margin-bottom:32px;letter-spacing:2px"></div><div id="bci" class="bc" style="width:100px;height:100px"><div id="btx" style="font-size:20px;font-weight:700;color:var(--ac)"></div><div id="btm" style="font-size:14px;color:var(--td);margin-top:4px"></div></div><div style="font-size:13px;color:var(--tm);margin-top:40px">Нажмите чтобы закрыть</div></div><div id="AT" class="at hd"></div><div id="QM" class="hd" style="position:fixed;inset:0;z-index:800;background:rgba(12,27,22,.97);display:flex;align-items:center;justify-content:center;padding:24px"></div>`;
+$("R").innerHTML=`<div id="V" style="padding-bottom:100px"></div><div class="tb"><div class="tbi">${tabs}</div></div><div id="BO" class="bo hd" onclick="stopB()"><div id="bcy" style="font-size:14px;color:var(--tm);margin-bottom:32px;letter-spacing:2px"></div><div id="bci" class="bc" style="width:100px;height:100px"><div id="btx" style="font-size:20px;font-weight:700;color:var(--ac)"></div><div id="btm" style="font-size:14px;color:var(--td);margin-top:4px"></div></div><div style="font-size:13px;color:var(--tm);margin-top:40px">Нажмите чтобы закрыть</div></div><div id="AT" class="at hd"></div><div id="QM" class="hd" style="position:fixed;inset:0;z-index:800;background:rgba(241,245,249,.95);display:flex;align-items:center;justify-content:center;padding:24px"></div>`;
 ct=qm()?"home":"th";go(ct);
 }
 
@@ -97,6 +98,7 @@ function go(t){ct=t;render();}
 // ═══ RENDER ═══
 function render(){
 if(!P)return;
+ensureDailyReset();
 const tabs=qm()?["home","health","tools","stats","awards"]:["th","stats"];
 tabs.forEach(t=>{const b=$("b_"+t);if(b)b.classList.toggle("on",t===ct);});
 const V=$("V");
@@ -136,6 +138,7 @@ ${[{l:"Выкурено "+pl,v:s.sm,u:"шт",i:"🚬",c:"var(--w)"},{l:"Потр
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
 ${[{l:"Сигарет за год",v:yc.toLocaleString(),c:"var(--w)"},{l:"Потратишь за год",v:"€"+ym.toFixed(0),c:"var(--dg)"},{l:"На курение уйдёт",v:yt+" ч",c:"#818CF8"},{l:"Жизни потеряешь",v:yd+" дн",c:"var(--dg)"}].map(x=>`<div style="padding:10px;border-radius:10px;background:var(--bg);border:1px solid var(--bd)"><div style="font-size:20px;font-weight:800;color:${x.c}">${x.v}</div><div style="font-size:10px;color:var(--tm);margin-top:3px">${x.l}</div></div>`).join("")}
 </div></div>
+<div class="cd" style="margin-bottom:16px"><div style="font-size:14px;font-weight:700;margin-bottom:6px">🕒 С последней сигареты</div><div style="font-size:28px;font-weight:800;color:var(--ac)">${lc?fmt(Math.max(0,Math.floor((Date.now()-lc)/60000))):"Ещё не отмечено"}</div><div style="font-size:12px;color:var(--tm);margin-top:4px">Таймер обновляется автоматически</div></div>
 <div class="dmg" style="margin-bottom:16px"><div style="display:flex;gap:12px;align-items:flex-start"><div style="font-size:22px;flex-shrink:0">⚠️</div><div><div style="font-size:12px;font-weight:700;color:var(--dg);margin-bottom:4px">ФАКТ О ЗДОРОВЬЕ</div><div style="font-size:13px;color:var(--td);line-height:1.5">${DMG[di]}</div></div></div></div>
 <button class="bcta" onclick="openQM()">🎯 Я готов бросить</button>
 </div>`;
@@ -172,6 +175,7 @@ return`<div style="padding:0 20px">
 <div style="text-align:center;padding:28px 0 20px"><div style="font-size:13px;color:var(--tm);letter-spacing:2px;margin-bottom:8px">${P.name.toUpperCase()}, ТЫ СВОБОДЕН</div>
 <div style="font-size:64px;font-weight:900;color:var(--ac);line-height:1;letter-spacing:-2px">${s.df}</div>
 <div style="font-size:16px;color:var(--td);margin-top:4px">${s.df===0?s.hf+" ч "+mR+" мин ":(s.df===1?"день ":s.df<5?"дня ":"дней ")+hR+" ч "+mR+" мин "}${sub}</div></div>
+<div class="cd" style="margin-bottom:20px;text-align:center"><div style="font-size:13px;color:var(--tm);margin-bottom:6px">🕒 С последней сигареты</div><div style="font-size:30px;font-weight:900;color:var(--ac)">${fmt(s.mf)}</div></div>
 <div style="padding:14px 18px;border-radius:14px;background:var(--ag);border:1px solid rgba(34,112,63,.2);margin-bottom:20px;font-size:14px;color:var(--ac);line-height:1.5;text-align:center">💡 ${MOT[mi]}</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
 ${[{l:"Не выкурено",v:s.av,u:"шт",i:"🚭",c:"var(--ac)"},{l:"Сэкономлено",v:"€"+s.ms.toFixed(1),u:"",i:"💰",c:"var(--w)"},{l:"Время жизни",v:fmt(s.ts),u:"",i:"⏰",c:"#818CF8"},{l:"Достижения",v:sa.length+"/"+ACH.length,u:"",i:"🏆",c:"#F472B6"}].map(x=>`<div style="padding:18px 16px;border-radius:16px;background:var(--card);border:1px solid var(--bd)"><div style="font-size:20px;margin-bottom:8px">${x.i}</div><div style="font-size:24px;font-weight:800;color:${x.c};line-height:1">${x.v}${x.u?`<span style="font-size:13px;font-weight:400;margin-left:4px">${x.u}</span>`:""}</div><div style="font-size:12px;color:var(--tm);margin-top:6px">${x.l}</div></div>`).join("")}
