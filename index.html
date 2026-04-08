@@ -6,7 +6,7 @@
 <style>
 :root{--bg:#F5F5F7;--card:#FFFFFF;--cl:#F0FDF4;--ac:#30D158;--ad:#248A3D;--ag:rgba(48,209,88,0.12);--w:#FF9500;--dg:#FF3B30;--tx:#1C1C1E;--td:#6C6C70;--tm:#AEAEB2;--bd:#E5E5EA;--sb:env(safe-area-inset-bottom,20px)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{background:var(--bg);color:var(--tx);font-family:'SF Pro Display',-apple-system,'Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100dvh}
+html,body{background:linear-gradient(180deg,#F8FBFF 0%,var(--bg) 100%);color:var(--tx);font-family:'SF Pro Display',-apple-system,'Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100dvh;font-size:17px;line-height:1.35}
 body{max-width:430px;margin:0 auto;padding-top:env(safe-area-inset-top,0)}
 input,button{font-family:inherit}input[type=range]{width:100%;height:6px;accent-color:var(--w)}::-webkit-scrollbar{display:none}
 @keyframes fi{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -143,6 +143,7 @@ ${[{l:"Выкурено "+pl,v:s.sm,u:"шт",i:"🚬",c:"var(--w)"},{l:"Потр
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
 ${[{l:"Сигарет за год",v:yc.toLocaleString(),c:"var(--w)"},{l:"Потратишь за год",v:"€"+ym.toFixed(0),c:"var(--dg)"},{l:"На курение уйдёт",v:yt+" ч",c:"#818CF8"},{l:"Жизни потеряешь",v:yd+" дн",c:"var(--dg)"}].map(x=>`<div style="padding:10px;border-radius:10px;background:var(--bg);border:1px solid var(--bd)"><div style="font-size:20px;font-weight:800;color:${x.c}">${x.v}</div><div style="font-size:10px;color:var(--tm);margin-top:3px">${x.l}</div></div>`).join("")}
 </div></div>
+<div class="cd" style="margin-bottom:16px"><div style="font-size:14px;font-weight:700;margin-bottom:6px">🕒 С последней сигареты</div><div style="font-size:28px;font-weight:800;color:var(--ac)">${lc?fmt(Math.max(0,Math.floor((Date.now()-lc)/60000))):"Ещё не отмечено"}</div><div style="font-size:12px;color:var(--tm);margin-top:4px">Таймер обновляется автоматически</div></div>
 <div class="dmg" style="margin-bottom:16px"><div style="display:flex;gap:12px;align-items:flex-start"><div style="font-size:22px;flex-shrink:0">⚠️</div><div><div style="font-size:12px;font-weight:700;color:var(--dg);margin-bottom:4px">ФАКТ О ЗДОРОВЬЕ</div><div style="font-size:13px;color:var(--td);line-height:1.5">${DMG[di]}</div></div></div></div>
 <button class="bcta" onclick="openQM()">🎯 Я готов бросить</button>
 </div>`;
