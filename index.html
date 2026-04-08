@@ -1,10 +1,10 @@
 <!DOCTYPE html><html lang="ru"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Дыши"><meta name="theme-color" content="#0C1B16">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Дыши"><meta name="theme-color" content="#F5F5F7">
 <title>Дыши свободно</title><link rel="apple-touch-icon" href="icon.png"><link rel="manifest" href="manifest.json">
 <style>
-:root{--bg:#0C1B16;--card:#142B22;--cl:#1A3A2D;--ac:#4ADE80;--ad:#22703F;--ag:rgba(74,222,128,.15);--w:#F59E0B;--dg:#EF4444;--tx:#E8F5EC;--td:#7CA88E;--tm:#4A7A5E;--bd:#1E4432;--sb:env(safe-area-inset-bottom,20px)}
+:root{--bg:#F5F5F7;--card:#FFFFFF;--cl:#F0FDF4;--ac:#30D158;--ad:#248A3D;--ag:rgba(48,209,88,0.12);--w:#FF9500;--dg:#FF3B30;--tx:#1C1C1E;--td:#6C6C70;--tm:#AEAEB2;--bd:#E5E5EA;--sb:env(safe-area-inset-bottom,20px)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
 html,body{background:var(--bg);color:var(--tx);font-family:'SF Pro Display',-apple-system,'Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100dvh}
 body{max-width:430px;margin:0 auto;padding-top:env(safe-area-inset-top,0)}
@@ -12,30 +12,30 @@ input,button{font-family:inherit}input[type=range]{width:100%;height:6px;accent-
 @keyframes fi{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes sd{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
 .fi{animation:fi .4s ease}.hd{display:none!important}
-.bp{width:100%;padding:16px 0;border-radius:16px;border:none;background:linear-gradient(135deg,var(--ac),#34D399);color:var(--bg);font-size:17px;font-weight:700;cursor:pointer}
+.bp{width:100%;padding:16px 0;border-radius:16px;border:none;background:linear-gradient(135deg,var(--ac),#34D399);color:#FFFFFF;font-size:17px;font-weight:700;cursor:pointer}
 .bp:active{transform:scale(.98)}.bs{width:100%;padding:16px 0;border-radius:16px;border:none;background:var(--card);color:var(--td);font-size:17px;font-weight:500;cursor:pointer}
 .bcta{width:100%;padding:18px 0;border-radius:16px;border:none;background:linear-gradient(135deg,var(--w),#F97316);color:#fff;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(245,158,11,.3)}
 .bcta:active{transform:scale(.98)}
-.inp{width:100%;padding:14px 16px;border-radius:14px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:17px;outline:none;-webkit-appearance:none}
-.cd{padding:20px;border-radius:16px;background:var(--card);border:1px solid var(--bd)}
-.ch{padding:8px 14px;border-radius:20px;border:1.5px solid var(--bd);background:transparent;color:var(--td);font-size:13px;cursor:pointer}
+.inp{width:100%;padding:14px 16px;border-radius:14px;border:1.5px solid #E5E5EA;background:#FFFFFF;color:#1C1C1E;font-size:17px;outline:none;-webkit-appearance:none}
+.cd{padding:20px;border-radius:16px;background:var(--card);border:1px solid var(--bd);box-shadow:0 2px 12px rgba(0,0,0,0.07)}
+.ch{padding:8px 14px;border-radius:20px;border:1.5px solid var(--bd);background:transparent;color:var(--td);font-size:14px;cursor:pointer}
 .ch.on{border-color:var(--w);background:rgba(245,158,11,.12);color:var(--w)}
-.cr{padding:10px 18px;border-radius:24px;border:2px solid var(--bd);background:transparent;color:var(--td);font-size:15px;cursor:pointer}
+.cr{padding:10px 18px;border-radius:24px;border:2px solid var(--bd);background:transparent;color:var(--td);font-size:16px;cursor:pointer}
 .cr.on{border-color:var(--ac);background:var(--ag);color:var(--ac);font-weight:600}
-.pb{padding:6px 12px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:var(--tm);font-size:12px;font-weight:600;cursor:pointer}
+.pb{padding:6px 12px;border-radius:10px;border:1px solid var(--bd);background:transparent;color:var(--tm);font-size:13px;font-weight:600;cursor:pointer}
 .pb.on{background:var(--ag);border-color:var(--ac);color:var(--ac)}
 .cb{width:52px;height:52px;border-radius:14px;border:1px solid var(--bd);background:var(--cl);color:var(--tx);font-size:24px;cursor:pointer}
 .cb:active{background:var(--bd)}
 .sos{width:100%;padding:18px 0;border-radius:16px;border:none;background:linear-gradient(135deg,var(--dg),#DC2626);color:#fff;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(239,68,68,.3)}
 .tb{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:100;background:linear-gradient(to top,var(--bg),rgba(12,27,22,.94),transparent);padding-top:20px}
-.tbi{display:flex;justify-content:space-around;padding:10px 8px;padding-bottom:max(14px,var(--sb));background:var(--card);border-top:1px solid var(--bd)}
+.tbi{display:flex;justify-content:space-around;padding:10px 8px;padding-bottom:max(14px,var(--sb));background:#FFFFFF;border-top:1px solid #E5E5EA}
 .tbb{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 12px;color:var(--tm)}
-.tbb.on{color:var(--ac)}.tbb span:first-child{font-size:22px}.tbb span:last-child{font-size:10px;font-weight:600;letter-spacing:.5px}
+.tbb.on{color:var(--ac)}.tbb span:first-child{font-size:22px}.tbb span:last-child{font-size:11px;font-weight:600;letter-spacing:.5px}
 .mb{flex:1;padding:16px 12px;border-radius:14px;cursor:pointer;text-align:left}
-.dmg{padding:16px 18px;border-radius:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15)}
-.bo{position:fixed;inset:0;z-index:1000;background:rgba(12,27,22,.97);display:flex;flex-direction:column;align-items:center;justify-content:center}
-.bc{border-radius:50%;background:radial-gradient(circle,var(--ag),transparent);border:3px solid var(--ac);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 4s ease-in-out}
-.at{position:fixed;top:calc(20px + env(safe-area-inset-top,0));left:20px;right:20px;z-index:900;padding:18px 20px;border-radius:16px;background:linear-gradient(135deg,var(--card),var(--cl));border:2px solid rgba(74,222,128,.3);box-shadow:0 8px 32px var(--ag);display:flex;align-items:center;gap:14px;max-width:390px;margin:0 auto;animation:sd .4s ease}
+.dmg{padding:16px 18px;border-radius:14px;background:rgba(255,59,48,0.06);border:1px solid rgba(255,59,48,0.15)}
+.bo{position:fixed;inset:0;z-index:1000;background:rgba(248,248,248,0.98);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.bc{border-radius:50%;background:radial-gradient(circle,var(--ag),transparent);border:3px solid var(--ac);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 4s ease-in-out;border-color:var(--ac)}
+.at{position:fixed;top:calc(20px + env(safe-area-inset-top,0));left:20px;right:20px;z-index:900;padding:18px 20px;border-radius:16px;background:white;border:2px solid rgba(48,209,88,0.3);box-shadow:0 8px 32px rgba(48,209,88,0.15);display:flex;align-items:center;gap:14px;max-width:390px;margin:0 auto;animation:sd .4s ease}
 .pbar{height:6px;border-radius:3px;background:var(--bd);overflow:hidden}.pfill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--ac),#34D399);transition:width 1s}
 .tld{position:absolute;left:20px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--ac),var(--bd))}
 .tln{width:40px;height:40px;border-radius:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;z-index:1}
@@ -63,6 +63,7 @@ function ld(){try{let v;v=localStorage.getItem("qp");if(v)P=JSON.parse(v);v=loca
 const $=id=>document.getElementById(id);
 const qm=()=>!!Q;
 function fmt(m){if(m<60)return m+" мин";if(m<1440)return Math.floor(m/60)+" ч "+m%60+" мин";return Math.floor(m/1440)+" д "+Math.floor((m%1440)/60)+" ч";}
+function fmtTimer(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;if(h>=1)return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sc).padStart(2,'0');return String(m).padStart(2,'0')+':'+String(sc).padStart(2,'0');}
 
 // ═══ INIT ═══
 ld();
@@ -83,12 +84,12 @@ function SC(d){sc=Math.max(1,sc+d);$("scd").textContent=sc;}
 function finishSetup(){P={name:$("iname").value||"Друг",dc:sc,pp:parseFloat($("iprc").value)||5,pk:parseInt($("ipak").value)||20,sd:new Date().toISOString()};sv();startApp();}
 
 // ═══ APP ═══
-function startApp(){buildUI();render();setInterval(render,60000);setInterval(()=>{mi=(mi+1)%MOT.length;di=(di+1)%DMG.length;render();},10000);}
+function startApp(){buildUI();render();setInterval(render,60000);setInterval(()=>{mi=(mi+1)%MOT.length;di=(di+1)%DMG.length;render();},10000);setInterval(()=>{const el=document.getElementById('lcTimer');if(el){const t=lc?Date.now()-lc:null;el.textContent=t!==null?fmtTimer(t):'—';}},1000);}
 
 function buildUI(){
 const tabs=qm()?`<button class="tbb on" onclick="go('home')" id="b_home"><span>🏠</span><span>Главная</span></button><button class="tbb" onclick="go('health')" id="b_health"><span>🫁</span><span>Здоровье</span></button><button class="tbb" onclick="go('tools')" id="b_tools"><span>🧠</span><span>КПТ</span></button><button class="tbb" onclick="go('stats')" id="b_stats"><span>📊</span><span>Журнал</span></button><button class="tbb" onclick="go('awards')" id="b_awards"><span>🏆</span><span>Награды</span></button>`
 :`<button class="tbb on" onclick="go('th')" id="b_th"><span>🏠</span><span>Главная</span></button><button class="tbb" onclick="go('stats')" id="b_stats"><span>📊</span><span>Журнал</span></button>`;
-$("R").innerHTML=`<div id="V" style="padding-bottom:100px"></div><div class="tb"><div class="tbi">${tabs}</div></div><div id="BO" class="bo hd" onclick="stopB()"><div id="bcy" style="font-size:14px;color:var(--tm);margin-bottom:32px;letter-spacing:2px"></div><div id="bci" class="bc" style="width:100px;height:100px"><div id="btx" style="font-size:20px;font-weight:700;color:var(--ac)"></div><div id="btm" style="font-size:14px;color:var(--td);margin-top:4px"></div></div><div style="font-size:13px;color:var(--tm);margin-top:40px">Нажмите чтобы закрыть</div></div><div id="AT" class="at hd"></div><div id="QM" class="hd" style="position:fixed;inset:0;z-index:800;background:rgba(12,27,22,.97);display:flex;align-items:center;justify-content:center;padding:24px"></div>`;
+$("R").innerHTML=`<div id="V" style="padding-bottom:100px"></div><div class="tb"><div class="tbi">${tabs}</div></div><div id="BO" class="bo hd" onclick="stopB()"><div id="bcy" style="font-size:14px;color:var(--tm);margin-bottom:32px;letter-spacing:2px"></div><div id="bci" class="bc" style="width:100px;height:100px"><div id="btx" style="font-size:20px;font-weight:700;color:var(--ac)"></div><div id="btm" style="font-size:14px;color:var(--td);margin-top:4px"></div></div><div style="font-size:13px;color:var(--tm);margin-top:40px">Нажмите чтобы закрыть</div></div><div id="AT" class="at hd"></div><div id="QM" class="hd" style="position:fixed;inset:0;z-index:800;background:rgba(248,248,248,0.98);display:flex;align-items:center;justify-content:center;padding:24px"></div>`;
 ct=qm()?"home":"th";go(ct);
 }
 
@@ -97,6 +98,8 @@ function go(t){ct=t;render();}
 // ═══ RENDER ═══
 function render(){
 if(!P)return;
+const todayStr=new Date().toDateString();
+if(td!==todayStr){tc=0;td=todayStr;lc=null;sv();}
 const tabs=qm()?["home","health","tools","stats","awards"]:["th","stats"];
 tabs.forEach(t=>{const b=$("b_"+t);if(b)b.classList.toggle("on",t===ct);});
 const V=$("V");
@@ -125,6 +128,10 @@ return`<div style="padding:0 20px">
 <button class="cb" onclick="adj(1)">+</button>
 </div>
 <div style="font-size:12px;color:var(--tm);margin-top:6px">Обычная норма: ${P.dc} / день</div></div>
+<div style="padding:16px 18px;border-radius:16px;background:var(--card);box-shadow:0 2px 12px rgba(0,0,0,0.07);margin-bottom:16px;text-align:center">
+<div style="font-size:13px;color:var(--tm);letter-spacing:1px;margin-bottom:6px">С ПОСЛЕДНЕЙ СИГАРЕТЫ</div>
+<div id="lcTimer" style="font-size:36px;font-weight:800;color:var(--ac);font-variant-numeric:tabular-nums;letter-spacing:2px">${lc?fmtTimer(Date.now()-lc):'—'}</div>
+</div>
 <div style="display:flex;gap:4px;justify-content:center;margin-bottom:16px">
 ${["day","week","month"].map(p=>`<button onclick="setTP('${p}')" class="pb ${tp===p?'on':''}">${p==="day"?"День":p==="week"?"Неделя":"Месяц"}</button>`).join("")}
 </div>
@@ -151,7 +158,7 @@ $("QM").innerHTML=`<div style="width:100%;max-width:380px" class="fi">
 <div style="margin-bottom:20px"><label style="font-size:13px;color:var(--tm);display:block;margin-bottom:12px;letter-spacing:1px">МЕТОД</label>
 <div style="display:flex;gap:10px"><button class="mb" id="qmg" style="border:2px solid var(--ac);background:var(--ag);color:var(--ac)" onclick="document.getElementById('qmg').style.cssText='border:2px solid var(--ac);background:var(--ag);color:var(--ac);flex:1;padding:16px 12px;border-radius:14px;cursor:pointer;text-align:left';document.getElementById('qmc').style.cssText='border:2px solid var(--bd);background:var(--card);color:var(--td);flex:1;padding:16px 12px;border-radius:14px;cursor:pointer;text-align:left';window._qmth='gradual'"><div style="font-weight:700;font-size:15px;margin-bottom:4px">Постепенно</div><div style="font-size:12px;opacity:.7">Снижение</div></button>
 <button class="mb" id="qmc" style="border:2px solid var(--bd);background:var(--card);color:var(--td)" onclick="document.getElementById('qmc').style.cssText='border:2px solid var(--ac);background:var(--ag);color:var(--ac);flex:1;padding:16px 12px;border-radius:14px;cursor:pointer;text-align:left';document.getElementById('qmg').style.cssText='border:2px solid var(--bd);background:var(--card);color:var(--td);flex:1;padding:16px 12px;border-radius:14px;cursor:pointer;text-align:left';window._qmth='cold'"><div style="font-weight:700;font-size:15px;margin-bottom:4px">Сразу</div><div style="font-size:12px;opacity:.7">Полный отказ</div></button></div></div>
-<div style="display:flex;gap:12px;margin-bottom:20px"><div style="flex:1.4"><label style="font-size:11px;color:var(--tm);display:block;margin-bottom:6px;letter-spacing:1px">ДАТА</label><input class="inp" id="qmd" type="date" value="${now.toISOString().split("T")[0]}" style="text-align:center;font-size:16px;color-scheme:dark"></div><div style="flex:1"><label style="font-size:11px;color:var(--tm);display:block;margin-bottom:6px;letter-spacing:1px">ВРЕМЯ</label><input class="inp" id="qmt" type="time" value="${now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')}" style="text-align:center;font-size:16px;color-scheme:dark"></div></div>
+<div style="display:flex;gap:12px;margin-bottom:20px"><div style="flex:1.4"><label style="font-size:11px;color:var(--tm);display:block;margin-bottom:6px;letter-spacing:1px">ДАТА</label><input class="inp" id="qmd" type="date" value="${now.toISOString().split("T")[0]}" style="text-align:center;font-size:16px;color-scheme:light"></div><div style="flex:1"><label style="font-size:11px;color:var(--tm);display:block;margin-bottom:6px;letter-spacing:1px">ВРЕМЯ</label><input class="inp" id="qmt" type="time" value="${now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')}" style="text-align:center;font-size:16px;color-scheme:light"></div></div>
 <div style="margin-bottom:24px"><label style="font-size:13px;color:var(--tm);display:block;margin-bottom:12px;letter-spacing:1px">МОТИВАЦИЯ</label><div id="qmr" style="display:flex;flex-wrap:wrap;gap:8px">${RSN.map(r=>`<button class="cr" onclick="this.classList.toggle('on')">${r}</button>`).join("")}</div></div>
 <div style="display:flex;gap:10px"><button class="bs" onclick="document.getElementById('QM').classList.add('hd')" style="flex:1">Отмена</button><button class="bp" onclick="confirmQ()" style="flex:1">🚀 Бросаю!</button></div></div>`;
 window._qmth="gradual";
@@ -172,7 +179,12 @@ return`<div style="padding:0 20px">
 <div style="text-align:center;padding:28px 0 20px"><div style="font-size:13px;color:var(--tm);letter-spacing:2px;margin-bottom:8px">${P.name.toUpperCase()}, ТЫ СВОБОДЕН</div>
 <div style="font-size:64px;font-weight:900;color:var(--ac);line-height:1;letter-spacing:-2px">${s.df}</div>
 <div style="font-size:16px;color:var(--td);margin-top:4px">${s.df===0?s.hf+" ч "+mR+" мин ":(s.df===1?"день ":s.df<5?"дня ":"дней ")+hR+" ч "+mR+" мин "}${sub}</div></div>
-<div style="padding:14px 18px;border-radius:14px;background:var(--ag);border:1px solid rgba(34,112,63,.2);margin-bottom:20px;font-size:14px;color:var(--ac);line-height:1.5;text-align:center">💡 ${MOT[mi]}</div>
+<div style="padding:14px 18px;border-radius:14px;background:var(--ag);border:1px solid rgba(48,209,88,.2);margin-bottom:20px;font-size:14px;color:var(--ac);line-height:1.5;text-align:center">💡 ${MOT[mi]}</div>
+<div style="padding:20px;border-radius:16px;background:var(--card);box-shadow:0 2px 12px rgba(0,0,0,0.07);margin-bottom:20px;text-align:center">
+<div style="font-size:13px;color:var(--tm);letter-spacing:1px;margin-bottom:8px">С ПОСЛЕДНЕЙ СИГАРЕТЫ</div>
+<div id="lcTimer" style="font-size:48px;font-weight:900;color:var(--ac);font-variant-numeric:tabular-nums;letter-spacing:3px">${lc?fmtTimer(Date.now()-lc):'—'}</div>
+<div style="font-size:13px;color:var(--tm);margin-top:6px">${lc?new Date(lc).toLocaleString('ru'):'нет данных'}</div>
+</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
 ${[{l:"Не выкурено",v:s.av,u:"шт",i:"🚭",c:"var(--ac)"},{l:"Сэкономлено",v:"€"+s.ms.toFixed(1),u:"",i:"💰",c:"var(--w)"},{l:"Время жизни",v:fmt(s.ts),u:"",i:"⏰",c:"#818CF8"},{l:"Достижения",v:sa.length+"/"+ACH.length,u:"",i:"🏆",c:"#F472B6"}].map(x=>`<div style="padding:18px 16px;border-radius:16px;background:var(--card);border:1px solid var(--bd)"><div style="font-size:20px;margin-bottom:8px">${x.i}</div><div style="font-size:24px;font-weight:800;color:${x.c};line-height:1">${x.v}${x.u?`<span style="font-size:13px;font-weight:400;margin-left:4px">${x.u}</span>`:""}</div><div style="font-size:12px;color:var(--tm);margin-top:6px">${x.l}</div></div>`).join("")}
 </div>
@@ -219,7 +231,7 @@ function setCP(p){cp=p;render();}
 // ═══ AWARDS ═══
 function renderAwards(){if(!qm())return"";const s=getQS();return`<div style="padding:20px 20px"><h2 style="font-size:22px;font-weight:800;margin-bottom:4px">🏆 Достижения</h2><p style="font-size:13px;color:var(--td);margin-bottom:20px">${sa.length} из ${ACH.length}</p>
 <div style="height:8px;border-radius:4px;background:var(--bd);margin-bottom:24px;overflow:hidden"><div style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--ac),var(--w));width:${(sa.length/ACH.length)*100}%"></div></div>
-${ACH.map(a=>{const u=sa.includes(a.id);return`<div style="display:flex;align-items:center;gap:16px;padding:16px 18px;border-radius:16px;background:${u?'var(--card)':'rgba(20,43,34,.5)'};border:1px solid ${u?'rgba(74,222,128,.25)':'var(--bd)'};opacity:${u?1:.5};margin-bottom:12px"><div style="width:48px;height:48px;border-radius:14px;flex-shrink:0;background:${u?'var(--ag)':'rgba(30,68,50,.3)'};display:flex;align-items:center;justify-content:center;font-size:24px">${u?a.i:'🔒'}</div><div style="flex:1"><div style="font-size:15px;font-weight:700;color:${u?'var(--tx)':'var(--tm)'}">${a.t}</div><div style="font-size:12px;color:var(--td);margin-top:2px">${a.d}</div></div>${u?'<div style="font-size:11px;color:var(--ac);font-weight:600">✓</div>':''}</div>`;}).join("")}
+${ACH.map(a=>{const u=sa.includes(a.id);return`<div style="display:flex;align-items:center;gap:16px;padding:16px 18px;border-radius:16px;background:${u?'var(--card)':'rgba(200,200,200,.15)'};border:1px solid ${u?'rgba(48,209,88,.25)':'var(--bd)'};opacity:${u?1:.5};margin-bottom:12px"><div style="width:48px;height:48px;border-radius:14px;flex-shrink:0;background:${u?'var(--ag)':'rgba(180,180,180,.2)'};display:flex;align-items:center;justify-content:center;font-size:24px">${u?a.i:'🔒'}</div><div style="flex:1"><div style="font-size:15px;font-weight:700;color:${u?'var(--tx)':'var(--tm)'}">${a.t}</div><div style="font-size:12px;color:var(--td);margin-top:2px">${a.d}</div></div>${u?'<div style="font-size:11px;color:var(--ac);font-weight:600">✓</div>':''}</div>`;}).join("")}
 ${Q.rs&&Q.rs.length?`<div style="margin-top:28px;padding:20px;border-radius:16px;background:var(--ag);border:1px solid rgba(34,112,63,.2)"><div style="font-size:14px;font-weight:700;color:var(--ac);margin-bottom:10px">🎯 Твои причины:</div><div style="display:flex;flex-wrap:wrap;gap:8px">${Q.rs.map(r=>`<span style="padding:6px 14px;border-radius:20px;background:rgba(74,222,128,.08);color:var(--ac);font-size:13px">${r}</span>`).join("")}</div></div>`:""}
 <button onclick="if(confirm('Сбросить все данные?')){${SK.map(k=>`localStorage.removeItem('${k}')`).join(";")};location.reload();}" style="width:100%;margin-top:32px;padding:14px 0;border-radius:12px;border:1px solid rgba(239,68,68,.2);background:transparent;color:var(--dg);font-size:14px;cursor:pointer;opacity:.6">⟲ Сбросить</button></div>`;}
 
@@ -231,5 +243,5 @@ function startB(){$("BO").classList.remove("hd");runB(0);}
 function runB(c){if(c>=3){stopB();return;}$("bcy").textContent="ЦИКЛ "+(c+1)+" / 3";$("btx").textContent="Вдох...";$("btm").textContent="4 сек";$("bci").style.width="200px";$("bci").style.height="200px";bti=setTimeout(()=>{$("btx").textContent="Задержка...";$("btm").textContent="7 сек";bti=setTimeout(()=>{$("btx").textContent="Выдох...";$("btm").textContent="8 сек";$("bci").style.width="100px";$("bci").style.height="100px";bti=setTimeout(()=>runB(c+1),8000);},7000);},4000);}
 function stopB(){clearTimeout(bti);$("BO").classList.add("hd");}
 </script>
-<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{});}</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("./sw.js").catch(()=>{});}</script>
 </body></html>
