@@ -21,9 +21,6 @@ const Storage = {
       user: {
         name: '', quitDate: null, quitMethod: 'cold',
         deviceType: 'iqos',
-        nicotineStrength: 20,
-        gradualReductionPct: 20,
-        gradualStartDate: null,
         dailyPuffs: 20, packPrice: 350, packSize: 20, dailyCost: 350,
         values: [], currentLevel: 1, setupComplete: false
       },
@@ -52,20 +49,6 @@ const Storage = {
     const d = this.get() || this.init();
     Object.assign(d.user, patch);
     this.save(d);
-  },
-
-  getGradualGoalForDate(dateStr, userObj) {
-    const d = this.get() || this.init();
-    const u = userObj || d.user;
-    if (!u || u.quitMethod !== 'gradual') return null;
-    const start = new Date((u.gradualStartDate || u.quitDate || new Date().toISOString()).split('T')[0]);
-    const current = new Date((dateStr || new Date().toISOString()).split('T')[0]);
-    const dayMs = 24 * 60 * 60 * 1000;
-    const weekIndex = Math.max(0, Math.floor((current - start) / dayMs / 7));
-    const reduction = Math.min(90, Math.max(5, +u.gradualReductionPct || 20)) / 100;
-    const base = Math.max(1, +u.dailyPuffs || 1);
-    const target = Math.round(base * Math.pow(1 - reduction, weekIndex));
-    return Math.max(0, target);
   },
 
   updateProgress(patch) {
