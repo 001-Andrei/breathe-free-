@@ -33,6 +33,7 @@ const Storage = {
       },
       dailyLogs: {},
       journal: [],
+      valuesJournal: [],
       settings: { notifications: false, reminderTime: '20:00' }
     };
     this.save(fresh);
@@ -107,6 +108,13 @@ const Storage = {
     this.save(d);
   },
 
+  addValuesEntry(entry) {
+    const d = this.get() || this.init();
+    if (!d.valuesJournal) d.valuesJournal = [];
+    d.valuesJournal.unshift({ ...entry, date: new Date().toISOString() });
+    this.save(d);
+  },
+
   _updateStreak(d) {
     const logs = d.dailyLogs;
     const today = new Date().toISOString().split('T')[0];
@@ -124,6 +132,18 @@ const Storage = {
     if (streak > d.progress.longestStreak) d.progress.longestStreak = streak;
     // Total smoke-free days
     d.progress.smokeFreedays = Object.values(logs).filter(l => l.puffs === 0).length;
+    // Auto-unlock Phase 2 levels (5-8) when streak >= 7 and previous level complete
+    if (streak >= 7) {
+      const exCounts = { 4: 5, 5: 5, 6: 5, 7: 5 }; // exercises per level
+      [5, 6, 7, 8].forEach(lvlId => {
+        if (!d.progress.levelsUnlocked.includes(lvlId)) {
+          const prevId = lvlId - 1;
+          const needed = exCounts[prevId] || 4;
+          const prevDone = d.progress.exercisesCompleted.filter(e => e.startsWith(prevId + '.')).length >= needed;
+          if (prevDone) d.progress.levelsUnlocked.push(lvlId);
+        }
+      });
+    }
     // Money saved
     const u = d.user;
     if (u.quitDate && u.dailyPuffs) {
