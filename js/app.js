@@ -150,7 +150,7 @@ welcome(el, data) {
       + '<div><label class="input-label">РАСХОДЫ ₽/ДЕНЬ</label><input class="input" id="inp-cost" type="number" inputmode="numeric" value="'+(draft.dailyCost||200)+'"></div>'
       + '</div>'
       + '<div class="input-group"><label class="input-label">КРЕПОСТЬ: <span id="nic-val">'+(draft.nicotineStrength||20)+'</span> мг/мл</label>'
-      + '<input type="range" min="0" max="50" value="'+(draft.nicotineStrength||20)+'" oninput="document.getElementById('nic-val').textContent=this.value;window._dNic=+this.value"></div>'
+      + '<input type="range" min="0" max="50" value="'+(draft.nicotineStrength||20)+'" oninput="document.getElementById(&quot;nic-val&quot;).textContent=this.value;window._dNic=+this.value"></div>'
       + '<button class="btn-primary" onclick="window._ws(2)">Продолжить →</button>';
   }
   function s2() {
@@ -291,15 +291,15 @@ home(el, data) {
     + '<div style="color:var(--text2);font-size:13px;margin-top:2px">' + p.exercisesCompleted.length + ' упражнений выполнено</div>'
     + '</div></div></div>'
     // Quick actions
-    + '<button class="btn-sos" onclick="App.navigate('urge-help')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
+    + '<button class="btn-sos" onclick="App.navigate(\'\2\'\3" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate('level',{id:' + lvlNum + '})">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate(\'\2\',{id:' + lvlNum + '})">'
     + '<div style="font-size:20px;margin-bottom:4px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
     + '<div style="font-weight:700;font-size:14px">Уровень ' + lvlNum + '</div>'
     + '<div style="color:var(--text2);font-size:12px">' + doneCount + '/' + totalEx + ' упр.</div>'
     + '<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:' + Math.round(doneCount/totalEx*100) + '%"></div></div>'
     + '</button>'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate('tracker')">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate(\'\2\'\3">'
     + '<div style="font-size:20px;margin-bottom:4px">📊</div>'
     + '<div style="font-weight:700;font-size:14px">Трекер</div>'
     + '<div style="color:var(--text2);font-size:12px">Сегодня: ' + todayLog.puffs + ' затяжек</div>'
@@ -327,64 +327,73 @@ levels(el, data) {
   var p = data.progress;
   var unlocked = p.levelsUnlocked || [1];
   var doneEx = p.exercisesCompleted || [];
-  el.innerHTML = '<div class="screen">'
-    + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Уровни программы</h2>'
-    + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Фаза 1: Подготовка к отказу</p>'
-    + LEVELS.map(function(lvl){
-        var isUnlocked = unlocked.includes(lvl.id);
-        var doneCnt = doneEx.filter(function(e){return e.startsWith(lvl.id+'.');}).length;
-        var isDone = doneCnt >= lvl.exercises.length;
-        var isCur = isUnlocked && !isDone;
-        var cls = 'level-card' + (isDone?' done':isCur?' current':!isUnlocked?' locked':'');
-        var badgeCls = isDone?'done':isCur?'current':'locked';
-        return '<div class="' + cls + '" onclick="'+(isUnlocked?'App.navigate('level',{id:'+lvl.id+'})':'')+'">'
-          + '<div style="display:flex;align-items:center;gap:14px">'
-          + '<div class="level-badge ' + badgeCls + '">'+(isDone?'✅':!isUnlocked?'🔒':lvl.emoji)+'</div>'
-          + '<div style="flex:1">'
-          + '<div style="display:flex;align-items:center;gap:8px">'
-          + '<div style="font-weight:700;font-size:15px">Уровень ' + lvl.id + ': ' + lvl.title + '</div>'
-          + (isDone?'<span style="font-size:11px;background:var(--green-light);color:var(--green);padding:2px 8px;border-radius:10px;font-weight:600">✓</span>':'')
-          + '</div>'
-          + '<div style="color:var(--text2);font-size:13px;margin-top:2px">' + lvl.subtitle + '</div>'
-          + (isUnlocked ? '<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:'+Math.round(doneCnt/lvl.exercises.length*100)+'%"></div></div>'
-            + '<div style="font-size:11px;color:var(--text3);margin-top:4px">'+doneCnt+'/'+lvl.exercises.length+' упражнений</div>'
-            : '<div style="font-size:12px;color:var(--text3);margin-top:4px">🔒 Завершите предыдущий уровень</div>')
-          + '</div>'
-          + (isDone?'<div style="font-size:22px">'+lvl.badgeEmoji+'</div>':'')
-          + '</div></div>';
-      }).join('')
-    + '</div>';
+  var html = '<div class="screen"><h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Уровни программы</h2>'
+    + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Фаза 1: Подготовка к отказу</p>';
+  LEVELS.forEach(function(lvl) {
+    var isUnlocked = unlocked.includes(lvl.id);
+    var doneCnt = doneEx.filter(function(e){return e.startsWith(lvl.id+'.');}).length;
+    var isDone = doneCnt >= lvl.exercises.length;
+    var isCur = isUnlocked && !isDone;
+    var cls = 'level-card' + (isDone?' done':isCur?' current':!isUnlocked?' locked':'');
+    var badgeCls = isDone?'done':isCur?'current':'locked';
+    var pct = Math.round(doneCnt/lvl.exercises.length*100);
+    html += '<div class="' + cls + '" data-lvl="' + lvl.id + '" data-unlocked="' + (isUnlocked?1:0) + '">'
+      + '<div style="display:flex;align-items:center;gap:14px">'
+      + '<div class="level-badge ' + badgeCls + '">' + (isDone?'✅':!isUnlocked?'🔒':lvl.emoji) + '</div>'
+      + '<div style="flex:1">'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<div style="font-weight:700;font-size:15px">Уровень ' + lvl.id + ': ' + lvl.title + '</div>'
+      + (isDone?'<span style="font-size:11px;background:var(--green-light);color:var(--green);padding:2px 8px;border-radius:10px;font-weight:600">✓</span>':'')
+      + '</div>'
+      + '<div style="color:var(--text2);font-size:13px;margin-top:2px">' + lvl.subtitle + '</div>'
+      + (isUnlocked
+        ? '<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:' + pct + '%"></div></div>'
+          + '<div style="font-size:11px;color:var(--text3);margin-top:4px">' + doneCnt + '/' + lvl.exercises.length + ' упражнений</div>'
+        : '<div style="font-size:12px;color:var(--text3);margin-top:4px">🔒 Завершите предыдущий уровень</div>')
+      + '</div>'
+      + (isDone?'<div style="font-size:22px">' + lvl.badgeEmoji + '</div>':'')
+      + '</div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+  el.querySelectorAll('.level-card[data-unlocked="1"]').forEach(function(card) {
+    card.onclick = function() { App.navigate('level', {id: +card.dataset.lvl}); };
+  });
 },
 
 levelDetail(el, data, lvlId) {
   var lvl = LEVELS.find(function(l){return l.id===+lvlId;});
   if(!lvl){App.navigate('levels');return;}
   var doneEx = data.progress.exercisesCompleted || [];
-  el.innerHTML = '<div class="screen">'
-    + '<button onclick="App.navigate('levels')" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">'
-    + '← Назад</button>'
+  var html = '<div class="screen">'
+    + '<button class="_back-levels" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
     + '<div style="text-align:center;padding:16px 0 24px">'
-    + '<div style="font-size:48px;margin-bottom:8px">'+lvl.emoji+'</div>'
-    + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Уровень '+lvl.id+': '+lvl.title+'</h2>'
-    + '<p style="color:var(--text2);font-size:14px">'+lvl.desc+'</p></div>'
-    + lvl.exercises.map(function(ex){
-        var done = doneEx.includes(ex.id);
-        return '<div class="exercise-card'+(done?' done':'')+'" onclick="App.navigate('exercise',{id:''+ex.id+''})">'
-          + '<div style="display:flex;align-items:center;gap:14px">'
-          + '<div style="font-size:28px;width:44px;text-align:center">'+ex.emoji+'</div>'
-          + '<div style="flex:1">'
-          + '<div style="font-weight:700;font-size:15px">'+ex.title+'</div>'
-          + '<div style="color:var(--text2);font-size:13px;margin-top:2px">'+(done?'✅ Выполнено':'Нажми чтобы начать')+'</div>'
-          + '</div>'
-          + '<div style="color:var(--text3)">›</div>'
-          + '</div></div>';
-      }).join('')
-    + (doneEx.filter(function(e){return e.startsWith(lvlId+'.');}).length>=lvl.exercises.length
-      ? '<div class="card" style="margin-top:12px;background:var(--green-light);border-color:rgba(76,175,130,.2);text-align:center">'
-        + '<div style="font-size:32px;margin-bottom:8px">'+lvl.badgeEmoji+'</div>'
-        + '<div style="font-weight:700;color:var(--green)">Бейдж «'+lvl.badge+'» получен!</div></div>'
-      : '')
-    + '</div>';
+    + '<div style="font-size:48px;margin-bottom:8px">' + lvl.emoji + '</div>'
+    + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Уровень ' + lvl.id + ': ' + lvl.title + '</h2>'
+    + '<p style="color:var(--text2);font-size:14px">' + lvl.desc + '</p></div>';
+  lvl.exercises.forEach(function(ex) {
+    var done = doneEx.includes(ex.id);
+    html += '<div class="exercise-card' + (done?' done':'') + '" data-exid="' + ex.id + '">'
+      + '<div style="display:flex;align-items:center;gap:14px">'
+      + '<div style="font-size:28px;width:44px;text-align:center">' + ex.emoji + '</div>'
+      + '<div style="flex:1">'
+      + '<div style="font-weight:700;font-size:15px">' + ex.title + '</div>'
+      + '<div style="color:var(--text2);font-size:13px;margin-top:2px">' + (done?'✅ Выполнено':'Нажми чтобы начать') + '</div>'
+      + '</div><div style="color:var(--text3)">›</div>'
+      + '</div></div>';
+  });
+  var allDone = doneEx.filter(function(e){return e.startsWith(lvlId+'.');}).length >= lvl.exercises.length;
+  if(allDone) {
+    html += '<div class="card" style="margin-top:12px;background:var(--green-light);border-color:rgba(76,175,130,.2);text-align:center">'
+      + '<div style="font-size:32px;margin-bottom:8px">' + lvl.badgeEmoji + '</div>'
+      + '<div style="font-weight:700;color:var(--green)">Бейдж «' + lvl.badge + '» получен!</div></div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+  el.querySelector('._back-levels').onclick = function() { App.navigate('levels'); };
+  el.querySelectorAll('.exercise-card').forEach(function(card) {
+    card.onclick = function() { App.navigate('exercise', {id: card.dataset.exid}); };
+  });
 },
 
 
@@ -433,7 +442,7 @@ exercise(el, data, exId) {
     body = '<div class="card" style="margin-bottom:20px;text-align:center">'
       + ex.content.split('\n').map(function(p){return p?'<p style="margin-bottom:10px;font-size:15px;line-height:1.6;color:var(--text)">'+p+'</p>':'<br>';}).join('')
       + '<div id="timer-disp" style="font-size:48px;font-weight:800;color:var(--blue);margin:20px 0">'+Math.floor(dur/60)+':'+String(dur%60).padStart(2,'0')+'</div>'
-      + '<button class="btn-primary" id="timer-btn" onclick="window._startTimer('+dur+')">▶ Начать таймер</button>'
+      + '<button class="btn-primary" id="timer-btn" onclick="window._startTimer(\'+dur+\')">▶ Начать таймер</button>'
       + '</div>';
     window._startTimer = function(secs) {
       var btn = document.getElementById('timer-btn');
@@ -452,7 +461,7 @@ exercise(el, data, exId) {
     body = '<div style="text-align:center;margin-bottom:20px"><p style="color:var(--text2);font-size:15px;margin-bottom:24px">'+ex.content+'</p>'
       + '<div class="breath-circle" id="bcirc"><div id="bph" style="font-size:16px;font-weight:700;color:var(--text)">Готов?</div>'
       + '<div id="bcnt" style="font-size:28px;font-weight:800;color:var(--blue);margin-top:4px"></div></div>'
-      + '<div style="margin-top:24px"><button class="btn-primary" onclick="App.navigate('breathing')">🕊 Открыть дыхание</button></div></div>';
+      + '<div style="margin-top:24px"><button class="btn-primary" onclick="App.navigate(\'\2\'\3">🕊 Открыть дыхание</button></div></div>';
   }
   if(ex.type==='wave') {
     body = '<div class="card" style="margin-bottom:20px;text-align:center">'
@@ -560,7 +569,7 @@ exercise(el, data, exId) {
   }
 
   el.innerHTML = '<div class="screen">'
-    + '<button onclick="App.navigate('level',{id:'+lvlId+'})" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
+    + '<button onclick="App.navigate(\'\2\',{id:'+lvlId+'})" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
     + '<div style="font-size:36px">'+ex.emoji+'</div>'
     + '<div><h2 style="font-size:20px;font-weight:800">'+ex.title+'</h2>'
@@ -569,7 +578,7 @@ exercise(el, data, exId) {
     + '</div>'
     + body
     + (done
-      ? '<button class="btn-secondary" onclick="App.navigate('level',{id:'+lvlId+'})">← К уровню</button>'
+      ? '<button class="_back-ex" style="width:100%;padding:14px;background:var(--card);color:var(--text2);font-size:15px;font-weight:600;border-radius:12px;border:1.5px solid var(--border)">← К уровню</button>'
       : ex.type==='read'||ex.type==='story'||ex.type==='metaphor'||ex.type==='reframe'||ex.type==='defusion'||ex.type==='self_compassion'||ex.type==='breathing'
         ? '<button class="btn-primary" onclick="markDone()">✅ Упражнение завершено</button>'
         : ex.type==='journal'||ex.type==='emotion'||ex.type==='bodymap'
@@ -592,10 +601,10 @@ urgeHelp(el, data) {
         + '<p style="color:var(--text2);font-size:15px;margin-top:6px">Что ты сейчас чувствуешь?</p></div>'
         + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
         + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','"Мне нужна затяжка"'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
-            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px" onclick="window._uType(''+t[0]+'')"><div style="font-size:32px;margin-bottom:8px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px;margin-top:4px">'+t[3]+'</div></div>';
+            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px" onclick="window._uType(\'\'+t[0]+\'\')"><div style="font-size:32px;margin-bottom:8px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px;margin-top:4px">'+t[3]+'</div></div>';
           }).join('')
         + '</div>'
-        + '<div style="padding:16px"><button class="btn-secondary" onclick="App.navigate('home')">← Назад</button></div></div>';
+        + '<div style="padding:16px"><button class="btn-secondary" onclick="App.navigate(\'\2\'\3">← Назад</button></div></div>';
       window._uType = function(t){urgeType=t;render(1);};
     }
     if(s===1) {
@@ -609,7 +618,7 @@ urgeHelp(el, data) {
       el.innerHTML = '<div class="screen"><button onclick="window._uBack()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
         + '<h2 style="font-size:22px;font-weight:800;margin-bottom:6px">Выбери упражнение</h2>'
         + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Одной минуты может хватить</p>'
-        + exs.map(function(e,i){return '<div class="card" style="cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:14px" onclick="window._sosEx('+i+')"><div style="font-size:32px">'+e.emoji+'</div><div style="font-weight:700;font-size:16px">'+e.title+'</div><div style="margin-left:auto;color:var(--text3)">›</div></div>';}).join('')
+        + exs.map(function(e,i){return '<div class="card" style="cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:14px" onclick="window._sosEx(\'+i+\')"><div style="font-size:32px">'+e.emoji+'</div><div style="font-weight:700;font-size:16px">'+e.title+'</div><div style="margin-left:auto;color:var(--text3)">›</div></div>';}).join('')
         + '</div>';
       window._uBack=function(){render(0);};
       window._sosEx=function(i){exs[i].action();};
@@ -643,7 +652,7 @@ urgeHelp(el, data) {
       el.innerHTML = '<div class="screen"><h2 style="font-size:22px;font-weight:800;margin-bottom:16px">Как тяга сейчас?</h2>'
         + '<div class="card" style="margin-bottom:20px">'
         + '<label class="input-label">ИНТЕНСИВНОСТЬ: <span id="ints">5</span>/10</label>'
-        + '<input type="range" min="1" max="10" value="5" oninput="document.getElementById('ints').textContent=this.value;window._sosInt=+this.value" style="margin-bottom:8px">'
+        + '<input type="range" min="1" max="10" value="5" oninput="document.getElementById(&quot;ints&quot;).textContent=this.value;window._sosInt=+this.value" style="margin-bottom:8px">'
         + '</div>'
         + '<button class="btn-primary" style="margin-bottom:10px" onclick="window._sosWin(true)">💪 Я остаюсь свободным</button>'
         + '<button class="btn-danger" onclick="window._sosWin(false)">Не справился</button></div>';
@@ -664,7 +673,7 @@ urgeHelp(el, data) {
         + (won
           ? '<div style="font-size:64px;margin-bottom:16px">🎉</div><h2 style="font-size:26px;font-weight:800;margin-bottom:10px">Ты справился!</h2><p style="color:var(--text2);font-size:16px;line-height:1.6;margin-bottom:32px">Каждая победа над тягой укрепляет новую нейронную связь.<br>Ты становишься свободнее.</p>'
           : '<div style="font-size:64px;margin-bottom:16px">💚</div><h2 style="font-size:24px;font-weight:800;margin-bottom:10px">Это не провал</h2><p style="color:var(--text2);font-size:15px;line-height:1.6;margin-bottom:32px">Один момент не определяет твой путь.<br>Важно не то, что ты упал, а то, что ты поднимаешься.</p>')
-        + '<button class="btn-primary" onclick="App.navigate('home')">← На главную</button></div>';
+        + '<button class="btn-primary" onclick="App.navigate(\'\2\'\3">← На главную</button></div>';
     }
   }
   render(0);
@@ -699,7 +708,7 @@ tracker(el, data) {
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">НАСТРОЕНИЕ</div>'
       + '<div class="mood-row">'
-      + moodEmojis.map(function(e,i){return '<button class="mood-btn'+(mood===i+1?' on':'')+'" onclick="window._mood('+(i+1)+')">'+e+'</button>';}).join('')
+      + moodEmojis.map(function(e,i){return '<button class="mood-btn'+(mood===i+1?' on':'')+'" onclick="window._mood(\'+(i+1)+\')">'+e+'</button>';}).join('')
       + '</div></div>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАМЕТКА (НЕОБЯЗАТЕЛЬНО)</div>'
@@ -868,7 +877,7 @@ journal(el, data) {
   el.innerHTML = '<div class="screen">'
     + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">📔 Дневник</h2>'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Триггеры и наблюдения</p>'
-    + '<button class="btn-primary" style="margin-bottom:16px" onclick="App.navigate('urge-help')">+ Записать тягу</button>'
+    + '<button class="btn-primary" style="margin-bottom:16px" onclick="App.navigate(\'\2\'\3">+ Записать тягу</button>'
     + (journal.length===0
       ? '<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:8px">📭</div><div style="color:var(--text2)">Записей пока нет</div></div>'
       : journal.slice(0,30).map(function(j){
