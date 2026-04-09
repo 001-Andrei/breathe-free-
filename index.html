@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Дыши">
+<meta name="theme-color" content="#4CAF82">
+<title>Дыши Свободно</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app"></div>
+<nav class="tabbar" id="tabbar">
+  <button class="tab-btn" data-screen="home" onclick="App.navigate('home')">
+    <span class="tab-icon">🏠</span><span>Главная</span>
+  </button>
+  <button class="tab-btn" data-screen="levels" onclick="App.navigate('levels')">
+    <span class="tab-icon">📚</span><span>Уровни</span>
+  </button>
+  <button class="tab-btn" data-screen="tracker" onclick="App.navigate('tracker')">
+    <span class="tab-icon">📊</span><span>Трекер</span>
+  </button>
+  <button class="tab-btn" data-screen="journal" onclick="App.navigate('journal')">
+    <span class="tab-icon">📔</span><span>Дневник</span>
+  </button>
+  <button class="tab-btn" data-screen="achievements" onclick="App.navigate('achievements')">
+    <span class="tab-icon">🏆</span><span>Награды</span>
+  </button>
+</nav>
+<div id="sos-btn" class="sos-fab hd" onclick="App.navigate('urge-help')" title="Помощь при тяге">🆘</div>
+<div id="toast-container"></div>
+<script src="js/data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
