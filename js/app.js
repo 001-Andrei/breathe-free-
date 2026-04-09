@@ -1391,6 +1391,7 @@ settings(el, data) {
     + '<div class="input-group"><label class="input-label">СНИЖЕНИЕ В НЕДЕЛЮ (%)</label><input class="input" id="s-grad" type="number" min="10" max="30" step="5" value="'+(u.gradualReductionPct||20)+'"></div>'
     + '<div class="input-group"><label class="input-label">КРЕПОСТЬ (мг/мл)</label><input class="input" id="s-nic" type="number" min="0" max="50" value="'+(u.nicotineStrength||20)+'"></div>'
     + '<div class="input-group"><label class="input-label">ЦЕНА ПАЧКИ (₽)</label><input class="input" id="s-cost" type="number" value="'+(u.packPrice||u.dailyCost||350)+'"></div>'
+    + '<div class="input-group"><label class="input-label">СТИКОВ В ПАЧКЕ</label><input class="input" id="s-packsize" type="number" value="'+(u.packSize||20)+'"></div>'
     + '<div class="input-group" style="margin:0"><label class="input-label">СТИКОВ/ДЕНЬ</label><input class="input" id="s-puffs" type="number" value="'+(u.dailyPuffs||20)+'"></div>'
     + '</div>'
     + '<div class="card" style="margin-bottom:12px">'
@@ -1406,6 +1407,7 @@ settings(el, data) {
     + '</div>';
   window._saveSettings=function(){
     var packP=+document.getElementById('s-cost').value||(u.packPrice||350);
+    var packSz=+document.getElementById('s-packsize').value||(u.packSize||20);
     var sticks=+document.getElementById('s-puffs').value||(u.dailyPuffs||20);
     var quitMethod=document.getElementById('s-method').value;
     var gradualPct=Math.min(30,Math.max(10,+document.getElementById('s-grad').value||20));
@@ -1418,8 +1420,9 @@ settings(el, data) {
       gradualReductionPct: gradualPct,
       nicotineStrength: +document.getElementById('s-nic').value || (u.nicotineStrength||20),
       packPrice:packP,
+      packSize:packSz,
       dailyPuffs:sticks,
-      dailyCost:Math.round(sticks*(packP/(u.packSize||20)))
+      dailyCost:Math.round(sticks*(packP/packSz))
     });
     var fresh=Storage.get()||Storage.init();
     fresh.settings = Object.assign({}, fresh.settings, { notifications:notifEnabled, reminderTime:reminderTime });
