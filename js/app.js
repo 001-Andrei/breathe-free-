@@ -353,15 +353,15 @@ home(el, data) {
     + '<div style="color:var(--text2);font-size:13px;margin-top:2px">' + p.exercisesCompleted.length + ' упражнений выполнено</div>'
     + '</div></div></div>'
     // Quick actions
-    + '<button class="btn-sos" onclick="App.navigate(\'\2\'\3" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
+    + '<button class="btn-sos" onclick="App.navigate(\'urge-help\')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate(\'\2\',{id:' + lvlNum + '})">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
     + '<div style="font-size:20px;margin-bottom:4px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
     + '<div style="font-weight:700;font-size:14px">Уровень ' + lvlNum + '</div>'
     + '<div style="color:var(--text2);font-size:12px">' + doneCount + '/' + totalEx + ' упр.</div>'
     + '<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:' + Math.round(doneCount/totalEx*100) + '%"></div></div>'
     + '</button>'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate(\'\2\'\3">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate(\'tracker\')">'
     + '<div style="font-size:20px;margin-bottom:4px">📊</div>'
     + '<div style="font-weight:700;font-size:14px">Трекер</div>'
     + '<div style="color:var(--text2);font-size:12px">Сегодня: ' + todayLog.puffs + ' стиков</div>'
@@ -529,7 +529,7 @@ exercise(el, data, exId) {
     body = '<div class="card" style="margin-bottom:20px;text-align:center">'
       + ex.content.split('\n').map(function(p){return p?'<p style="margin-bottom:10px;font-size:15px;line-height:1.6;color:var(--text)">'+p+'</p>':'<br>';}).join('')
       + '<div id="timer-disp" style="font-size:48px;font-weight:800;color:var(--blue);margin:20px 0">'+Math.floor(dur/60)+':'+String(dur%60).padStart(2,'0')+'</div>'
-      + '<button class="btn-primary" id="timer-btn" onclick="window._startTimer(\'+dur+\')">▶ Начать таймер</button>'
+      + '<button class="btn-primary" id="timer-btn" onclick="window._startTimer(' + dur + ')">▶ Начать таймер</button>'
       + '</div>';
     window._startTimer = function(secs) {
       var btn = document.getElementById('timer-btn');
@@ -548,7 +548,7 @@ exercise(el, data, exId) {
     body = '<div style="text-align:center;margin-bottom:20px"><p style="color:var(--text2);font-size:15px;margin-bottom:24px">'+ex.content+'</p>'
       + '<div class="breath-circle" id="bcirc"><div id="bph" style="font-size:16px;font-weight:700;color:var(--text)">Готов?</div>'
       + '<div id="bcnt" style="font-size:28px;font-weight:800;color:var(--blue);margin-top:4px"></div></div>'
-      + '<div style="margin-top:24px"><button class="btn-primary" onclick="App.navigate(\'\2\'\3">🕊 Открыть дыхание</button></div></div>';
+      + '<div style="margin-top:24px"><button class="btn-primary" onclick="App.navigate(\'breathing\')">🕊 Открыть дыхание</button></div></div>';
   }
   if(ex.type==='wave') {
     body = '<div class="card" style="margin-bottom:20px;text-align:center">'
@@ -865,7 +865,7 @@ exercise(el, data, exId) {
   }
 
   el.innerHTML = '<div class="screen">'
-    + '<button onclick="App.navigate(\'\2\',{id:'+lvlId+'})" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
+    + '<button onclick="App.navigate(\'level\',{id:'+lvlId+'})" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
     + '<div style="font-size:36px">'+ex.emoji+'</div>'
     + '<div><h2 style="font-size:20px;font-weight:800">'+ex.title+'</h2>'
@@ -899,10 +899,10 @@ urgeHelp(el, data) {
         + '<p style="color:var(--text2);font-size:15px;margin-top:6px">Что ты сейчас чувствуешь?</p></div>'
         + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
         + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','"Мне нужна затяжка"'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
-            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px" onclick="window._uType(\'\'+t[0]+\'\')"><div style="font-size:32px;margin-bottom:8px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px;margin-top:4px">'+t[3]+'</div></div>';
+            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:32px;margin-bottom:8px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px;margin-top:4px">'+t[3]+'</div></div>';
           }).join('')
         + '</div>'
-        + '<div style="padding:16px"><button class="btn-secondary" onclick="App.navigate(\'\2\'\3">← Назад</button></div></div>';
+        + '<div style="padding:16px"><button class="btn-secondary" onclick="App.navigate(\'home\')">← Назад</button></div></div>';
       window._uType = function(t){urgeType=t;render(1);};
     }
     if(s===1) {
@@ -916,7 +916,7 @@ urgeHelp(el, data) {
       el.innerHTML = '<div class="screen"><button onclick="window._uBack()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
         + '<h2 style="font-size:22px;font-weight:800;margin-bottom:6px">Выбери упражнение</h2>'
         + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Одной минуты может хватить</p>'
-        + exs.map(function(e,i){return '<div class="card" style="cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:14px" onclick="window._sosEx(\'+i+\')"><div style="font-size:32px">'+e.emoji+'</div><div style="font-weight:700;font-size:16px">'+e.title+'</div><div style="margin-left:auto;color:var(--text3)">›</div></div>';}).join('')
+        + exs.map(function(e,i){return '<div class="card" style="cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:14px" onclick="window._sosEx('+i+')"><div style="font-size:32px">'+e.emoji+'</div><div style="font-weight:700;font-size:16px">'+e.title+'</div><div style="margin-left:auto;color:var(--text3)">›</div></div>';}).join('')
         + '</div>';
       window._uBack=function(){render(0);};
       window._sosEx=function(i){exs[i].action();};
@@ -978,7 +978,7 @@ urgeHelp(el, data) {
         + (won
           ? '<div style="font-size:64px;margin-bottom:16px">🎉</div><h2 style="font-size:26px;font-weight:800;margin-bottom:10px">Ты справился!</h2><p style="color:var(--text2);font-size:16px;line-height:1.6;margin-bottom:32px">Каждая победа над тягой укрепляет новую нейронную связь.<br>Ты становишься свободнее.</p>'
           : '<div style="font-size:64px;margin-bottom:16px">💚</div><h2 style="font-size:24px;font-weight:800;margin-bottom:10px">Это не провал</h2><p style="color:var(--text2);font-size:15px;line-height:1.6;margin-bottom:32px">Один момент не определяет твой путь.<br>Важно не то, что ты упал, а то, что ты поднимаешься.</p>')
-        + '<button class="btn-primary" onclick="App.navigate(\'\2\'\3">← На главную</button></div>';
+        + '<button class="btn-primary" onclick="App.navigate(\'home\')">← На главную</button></div>';
     }
   }
   render(0);
@@ -1016,7 +1016,7 @@ tracker(el, data) {
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">НАСТРОЕНИЕ</div>'
       + '<div class="mood-row">'
-      + moodEmojis.map(function(e,i){return '<button class="mood-btn'+(mood===i+1?' on':'')+'" onclick="window._mood(\'+(i+1)+\')">'+e+'</button>';}).join('')
+      + moodEmojis.map(function(e,i){return '<button class="mood-btn'+(mood===i+1?' on':'')+'" onclick="window._mood('+(i+1)+')">'+e+'</button>';}).join('')
       + '</div></div>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАМЕТКА (НЕОБЯЗАТЕЛЬНО)</div>'
