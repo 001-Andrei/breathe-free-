@@ -274,7 +274,7 @@ home(el, data) {
     + (isPrepPhase ? 'До дня X: ' + daysToQuit + ' ' + (daysToQuit===1?'день':daysToQuit<5?'дня':'дней')
       : daysSinceQuit===0 ? 'Сегодня — день отказа!'
       : 'День ' + daysSinceQuit + ' без стиков') + '</div></div>'
-    + '<div style="text-align:right"><div style="font-size:12px;color:var(--text2)">Уровень ' + lvlNum + '/4</div>'
+    + '<div style="text-align:right"><div style="font-size:12px;color:var(--text2)">Уровень ' + lvlNum + '/8</div>'
     + '<div style="font-size:12px;color:var(--green);font-weight:700">🔥 Серия: ' + streak + ' ' + (streak===1?'день':streak<5?'дня':'дней') + '</div></div>'
     + '</div>'
     // Progress ring
@@ -327,33 +327,56 @@ levels(el, data) {
   var p = data.progress;
   var unlocked = p.levelsUnlocked || [1];
   var doneEx = p.exercisesCompleted || [];
+  var streak = p.consecutiveSmokeFree || 0;
+  var phase1 = LEVELS.filter(function(l){return l.phase===1;});
+  var phase2 = LEVELS.filter(function(l){return l.phase===2;});
   var html = '<div class="screen"><h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Уровни программы</h2>'
-    + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Фаза 1: Подготовка к отказу</p>';
-  LEVELS.forEach(function(lvl) {
+    + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">ACT-программа из 8 уровней</p>';
+
+  function lvlCard(lvl) {
     var isUnlocked = unlocked.includes(lvl.id);
     var doneCnt = doneEx.filter(function(e){return e.startsWith(lvl.id+'.');}).length;
     var isDone = doneCnt >= lvl.exercises.length;
     var isCur = isUnlocked && !isDone;
-    var cls = 'level-card' + (isDone?' done':isCur?' current':!isUnlocked?' locked':'');
+    var cls = 'level-card'+(isDone?' done':isCur?' current':!isUnlocked?' locked':'');
     var badgeCls = isDone?'done':isCur?'current':'locked';
     var pct = Math.round(doneCnt/lvl.exercises.length*100);
-    html += '<div class="' + cls + '" data-lvl="' + lvl.id + '" data-unlocked="' + (isUnlocked?1:0) + '">'
-      + '<div style="display:flex;align-items:center;gap:14px">'
-      + '<div class="level-badge ' + badgeCls + '">' + (isDone?'✅':!isUnlocked?'🔒':lvl.emoji) + '</div>'
-      + '<div style="flex:1">'
-      + '<div style="display:flex;align-items:center;gap:8px">'
-      + '<div style="font-weight:700;font-size:15px">Уровень ' + lvl.id + ': ' + lvl.title + '</div>'
-      + (isDone?'<span style="font-size:11px;background:var(--green-light);color:var(--green);padding:2px 8px;border-radius:10px;font-weight:600">✓</span>':'')
-      + '</div>'
-      + '<div style="color:var(--text2);font-size:13px;margin-top:2px">' + lvl.subtitle + '</div>'
-      + (isUnlocked
-        ? '<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:' + pct + '%"></div></div>'
-          + '<div style="font-size:11px;color:var(--text3);margin-top:4px">' + doneCnt + '/' + lvl.exercises.length + ' упражнений</div>'
-        : '<div style="font-size:12px;color:var(--text3);margin-top:4px">🔒 Завершите предыдущий уровень</div>')
-      + '</div>'
-      + (isDone?'<div style="font-size:22px">' + lvl.badgeEmoji + '</div>':'')
-      + '</div></div>';
-  });
+    var lockMsg = lvl.phase===2
+      ? (streak<7?'🔒 Нужно '+Math.max(0,7-streak)+' чистых дней подряд':'🔒 Завершите предыдущий уровень')
+      : '🔒 Завершите предыдущий уровень';
+    return '<div class="'+cls+'" data-lvl="'+lvl.id+'" data-unlocked="'+(isUnlocked?1:0)+'">'
+      +'<div style="display:flex;align-items:center;gap:14px">'
+      +'<div class="level-badge '+badgeCls+'">'+(isDone?'✅':!isUnlocked?'🔒':lvl.emoji)+'</div>'
+      +'<div style="flex:1">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<div style="font-weight:700;font-size:15px">'+lvl.id+'. '+lvl.title+'</div>'
+      +(isDone?'<span style="font-size:11px;background:var(--green-light);color:var(--green);padding:2px 8px;border-radius:10px;font-weight:600">✓</span>':'')
+      +'</div>'
+      +'<div style="color:var(--text2);font-size:13px;margin-top:2px">'+lvl.subtitle+'</div>'
+      +(isUnlocked
+        ?'<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:'+pct+'%"></div></div>'
+          +'<div style="font-size:11px;color:var(--text3);margin-top:4px">'+doneCnt+'/'+lvl.exercises.length+' упражнений</div>'
+        :'<div style="font-size:12px;color:var(--text3);margin-top:4px">'+lockMsg+'</div>')
+      +'</div>'
+      +(isDone?'<div style="font-size:22px">'+lvl.badgeEmoji+'</div>':'')
+      +'</div></div>';
+  }
+
+  // Phase 1
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.5px;margin-bottom:10px">ФАЗА 1 — ПОДГОТОВКА К ОТКАЗУ</div>';
+  phase1.forEach(function(lvl){html+=lvlCard(lvl);});
+
+  // Phase 2
+  var phase2StreakNeeded = streak < 7;
+  html += '<div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.5px;margin-top:16px;margin-bottom:6px">ФАЗА 2 — ЖИЗНЬ БЕЗ НИКОТИНА</div>';
+  if(phase2StreakNeeded) {
+    html += '<div class="card card-sm" style="margin-bottom:10px;background:linear-gradient(135deg,#FFF8E1,#FFF3E0)">'
+      +'<div style="font-size:13px;font-weight:600;color:var(--orange)">🔒 Разблокировка через '+(7-streak)+' чистых дней</div>'
+      +'<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:'+Math.round(streak/7*100)+'%;background:var(--orange)"></div></div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-top:4px">'+streak+' / 7 дней подряд</div>'
+      +'</div>';
+  }
+  phase2.forEach(function(lvl){html+=lvlCard(lvl);});
   html += '</div>';
   el.innerHTML = html;
   el.querySelectorAll('.level-card[data-unlocked="1"]').forEach(function(card) {
@@ -407,17 +430,19 @@ exercise(el, data, exId) {
 
   function markDone() {
     Storage.completeExercise(exId);
-    // Check if level complete
     var fresh = Storage.get();
     var lvlExIds = lvl.exercises.map(function(e){return e.id;});
     var allDone = lvlExIds.every(function(id){return fresh.progress.exercisesCompleted.includes(id);});
-    if(allDone) {
+    if(allDone && lvlId <= 4) {
+      // Phase 1: auto-unlock next level
       var nextId = lvlId + 1;
       if(nextId <= 4) Storage.unlockLevel(nextId);
-      var fresh2 = Storage.get();
-      fresh2.user.currentLevel = Math.max(fresh2.user.currentLevel||1, Math.min(nextId,4));
-      Storage.save(fresh2);
     }
+    // Update currentLevel to highest unlocked
+    var fresh2 = Storage.get();
+    var maxUnlocked = Math.max.apply(null, (fresh2.progress.levelsUnlocked || [1]).slice());
+    fresh2.user.currentLevel = maxUnlocked;
+    Storage.save(fresh2);
     var newAchs = Storage.checkAndUnlockAchievements();
     newAchs.forEach(function(a){Toast.show(a.emoji+' '+a.name+' — достижение!','success');});
     Toast.show('✅ Упражнение завершено!','success');
@@ -568,6 +593,215 @@ exercise(el, data, exId) {
     };
   }
 
+  if(ex.type==='values_compass') {
+    var userValues = data.user.values || [];
+    var vItems = VALUES.filter(function(v){return userValues.includes(v.id);});
+    if(!vItems.length) vItems = VALUES.slice(0,3);
+    body = '<div class="card" style="margin-bottom:16px">'
+      + ex.content.split('\n').map(function(p){return p?'<p style="font-size:15px;line-height:1.6;margin-bottom:8px">'+p+'</p>':'<br>';}).join('')
+      + '</div>'
+      + vItems.map(function(v){
+          return '<div class="card card-sm" style="margin-bottom:12px">'
+            + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+            + '<div style="font-size:26px">'+v.emoji+'</div>'
+            + '<div style="font-weight:700;font-size:15px">'+v.name+'</div></div>'
+            + '<p style="color:var(--text2);font-size:13px;margin-bottom:8px">Как изменилась эта область с тех пор, как ты начал?</p>'
+            + '<textarea class="input" style="height:64px;resize:none;display:block;font-size:14px" rows="2" placeholder="Запиши своё наблюдение..."></textarea>'
+            + '</div>';
+        }).join('');
+  }
+  if(ex.type==='daily_commit') {
+    body = '<div class="card" style="margin-bottom:16px">'
+      + ex.content.split('\n').map(function(p){return p?'<p style="font-size:15px;line-height:1.6;margin-bottom:8px">'+p+'</p>':'<br>';}).join('')
+      + '</div>'
+      + '<div class="card card-sm">'
+      + '<p style="font-size:13px;color:var(--text2);margin-bottom:8px">Примеры: '+ex.examples.join(' · ')+'</p>'
+      + '<textarea class="input" id="commit-inp" style="height:80px;resize:none;display:block;margin-bottom:10px" placeholder="'+ex.placeholder+'"></textarea>'
+      + '<button class="btn-primary" onclick="window._saveCommit()">💾 Записать намерение</button>'
+      + '<div id="commit-ok" style="display:none;color:var(--green);font-weight:600;margin-top:8px">✅ Записано!</div>'
+      + '</div>';
+    window._saveCommit = function(){
+      var t=document.getElementById('commit-inp');
+      if(!t||!t.value.trim()){Toast.show('Напиши своё намерение','warn');return;}
+      Storage.addValuesEntry({type:'action', text:t.value.trim(), valueId:'general'});
+      var ok=document.getElementById('commit-ok');
+      if(ok)ok.style.display='block';
+      Toast.show('✅ Записано','success');
+    };
+  }
+  if(ex.type==='replacement_plan') {
+    var repTriggers=[
+      {id:'body',label:'🫁 Физическая тяга',alts:['Дыхание 4-7-8','Стакан воды','Прогулка 5 мин','Растяжка','Умыться холодной водой']},
+      {id:'emotion',label:'😰 Эмоция / Стресс',alts:['Записать в дневник','Позвонить другу','Включить музыку','5 мин медитации','Сострадание к себе']},
+      {id:'thought',label:'💭 Навязчивая мысль',alts:['«У меня есть мысль, что...»','Мысли на листьях','Дыхание','Вспомнить ценность','Подождать 5 мин']},
+      {id:'situation',label:'📍 Ситуация / Контекст',alts:['Сменить обстановку','Чашка чая','Жвачка','Занять руки','Быстрая прогулка']}
+    ];
+    body='<div class="card" style="margin-bottom:16px"><p style="font-size:15px;line-height:1.6">'+ex.content+'</p></div>'
+      +repTriggers.map(function(tt,i){
+        return '<div class="card card-sm" style="margin-bottom:10px">'
+          +'<div style="font-weight:600;font-size:14px;margin-bottom:8px">'+tt.label+'</div>'
+          +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
+          +tt.alts.map(function(a){return '<button class="chip _rep" data-g="'+i+'" data-v="'+a+'">'+a+'</button>';}).join('')
+          +'</div></div>';
+      }).join('');
+    setTimeout(function(){
+      document.querySelectorAll('._rep').forEach(function(b){
+        b.onclick=function(){document.querySelectorAll('._rep[data-g="'+b.dataset.g+'"]').forEach(function(x){x.classList.remove('on');});b.classList.add('on');};
+      });
+    },100);
+  }
+  if(ex.type==='ifthen') {
+    var ifOpts=['почувствую тягу утром','испытаю стресс','буду скучать','поспорю с кем-то','выпью алкоголь','окажусь там, где курят'];
+    var thenOpts=['выйду на 5-мин прогулку','сделаю 10 вдохов','выпью стакан воды','напишу в дневник','позвоню другу','сделаю растяжку'];
+    var mkOpt=function(arr){return arr.map(function(o){return '<option>'+o+'</option>';}).join('');};
+    body='<div class="card" style="margin-bottom:16px">'
+      +ex.content.split('\n').map(function(p){return p?'<p style="font-size:15px;line-height:1.6;margin-bottom:6px">'+p+'</p>':'';}).join('')
+      +'</div>'
+      +[0,1,2].map(function(i){
+        return '<div class="card card-sm" style="margin-bottom:10px">'
+          +'<div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px">ПЛАН '+(i+1)+'</div>'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+          +'<span style="font-size:12px;color:var(--text2);width:42px;flex-shrink:0">ЕСЛИ я</span>'
+          +'<select class="input" style="flex:1;font-size:13px;padding:8px">'+mkOpt(ifOpts)+'</select></div>'
+          +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="font-size:12px;color:var(--text2);width:42px;flex-shrink:0">ТО я</span>'
+          +'<select class="input" style="flex:1;font-size:13px;padding:8px">'+mkOpt(thenOpts)+'</select></div>'
+          +'</div>';
+      }).join('');
+  }
+  if(ex.type==='habit_tracker') {
+    var htDays=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+    body='<div class="card" style="margin-bottom:16px">'
+      +'<p style="font-size:14px;margin-bottom:12px">Выбери 1–3 привычки для этой недели:</p>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">'
+      +ex.habits.map(function(h,i){return '<button class="chip _hb'+(i<3?' on':'')+'" data-i="'+i+'">'+h+'</button>';}).join('')
+      +'</div>'
+      +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'
+      +'<tr><th style="text-align:left;font-size:11px;padding:3px 0;width:40%"></th>'
+      +htDays.map(function(d){return '<th style="font-size:11px;color:var(--text2);padding:4px;text-align:center">'+d+'</th>';}).join('')
+      +'</tr>'
+      +ex.habits.slice(0,3).map(function(h,hi){
+        return '<tr class="_hrow" data-hi="'+hi+'">'
+          +'<td style="font-size:11px;padding:3px 4px 3px 0;line-height:1.3">'+h+'</td>'
+          +htDays.map(function(_,di){return '<td style="text-align:center"><button class="_hc" data-h="'+hi+'" data-d="'+di+'" style="width:26px;height:26px;border-radius:7px;background:var(--bg);border:1.5px solid var(--border);font-size:13px;cursor:pointer">○</button></td>';}).join('')
+          +'</tr>';
+      }).join('')
+      +'</table></div></div>';
+    setTimeout(function(){
+      document.querySelectorAll('._hb').forEach(function(b){
+        b.onclick=function(){
+          var on=document.querySelectorAll('._hb.on').length;
+          if(on>=3&&!b.classList.contains('on')){Toast.show('Максимум 3 привычки','warn');return;}
+          b.classList.toggle('on');
+        };
+      });
+      document.querySelectorAll('._hc').forEach(function(b){
+        b.onclick=function(){
+          var done=b.textContent==='✓';
+          b.textContent=done?'○':'✓';
+          b.style.background=done?'var(--bg)':'var(--green)';
+          b.style.color=done?'':'#fff';
+          b.style.borderColor=done?'var(--border)':'var(--green)';
+        };
+      });
+    },100);
+  }
+  if(ex.type==='red_zones') {
+    body='<div class="card" style="margin-bottom:16px"><p style="font-size:15px;line-height:1.6">'+ex.content+'</p></div>'
+      +ex.zones.map(function(z){
+        return '<div class="card card-sm" style="margin-bottom:8px">'
+          +'<label style="display:flex;align-items:center;gap:10px;cursor:pointer">'
+          +'<input type="checkbox" class="_rz" data-z="'+z.id+'" style="width:20px;height:20px;cursor:pointer;flex-shrink:0">'
+          +'<span style="font-size:14px;font-weight:600">'+z.label+'</span></label>'
+          +'<div id="rzp-'+z.id+'" style="display:none;margin-top:8px;padding:10px;background:var(--bg);border-radius:10px;font-size:13px;color:var(--text);line-height:1.5">💡 '+z.plan+'</div>'
+          +'</div>';
+      }).join('');
+    setTimeout(function(){
+      document.querySelectorAll('._rz').forEach(function(cb){
+        cb.onchange=function(){
+          var p=document.getElementById('rzp-'+cb.dataset.z);
+          if(p)p.style.display=cb.checked?'block':'none';
+        };
+      });
+    },100);
+  }
+  if(ex.type==='letter_to_self') {
+    var saved=data.user.letterToSelf||'';
+    body='<div class="card" style="margin-bottom:16px">'
+      +ex.content.split('\n').map(function(p){return p?'<p style="font-size:15px;line-height:1.6;margin-bottom:8px">'+p+'</p>':'<br>';}).join('')
+      +'<p style="font-size:12px;color:var(--text2)">Письмо будет показано тебе в SOS-помощи.</p></div>'
+      +'<div class="card card-sm">'
+      +'<textarea class="input" id="letter-inp" style="height:180px;resize:none;display:block;line-height:1.6;font-size:14px" placeholder="'+ex.placeholder+'">'+saved+'</textarea>'
+      +'<button class="btn-primary" style="margin-top:10px" onclick="window._saveLetter()">💾 Сохранить письмо</button>'
+      +'<div id="letter-ok" style="display:none;color:var(--green);font-weight:600;margin-top:8px">✅ Письмо сохранено — появится в SOS.</div>'
+      +'</div>';
+    window._saveLetter=function(){
+      var t=document.getElementById('letter-inp');
+      if(!t||!t.value.trim()){Toast.show('Напиши хотя бы несколько слов','warn');return;}
+      Storage.updateUser({letterToSelf:t.value.trim()});
+      var ok=document.getElementById('letter-ok');
+      if(ok)ok.style.display='block';
+      Toast.show('✅ Письмо сохранено','success');
+    };
+  }
+  if(ex.type==='emergency_plan') {
+    var epSaved=data.user.emergencyPlan||ex.defaults;
+    body='<div class="card" style="margin-bottom:16px"><p style="font-size:15px;line-height:1.6">'+ex.content+'</p></div>'
+      +'<div id="ep-list">'
+      +epSaved.map(function(p,i){
+        return '<div class="card card-sm" style="margin-bottom:8px;display:flex;align-items:center;gap:10px">'
+          +'<div style="width:28px;height:28px;border-radius:50%;background:#FFF3E0;color:var(--orange);font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>'
+          +'<input class="_ep" class="input" value="'+p+'" style="flex:1;padding:10px 12px;font-size:14px;border:1.5px solid var(--border);border-radius:10px;background:var(--card)">'
+          +'</div>';
+      }).join('')
+      +'</div>'
+      +'<button class="btn-primary" style="margin-top:8px" onclick="window._saveEP()">💾 Сохранить план</button>'
+      +'<div id="ep-ok" style="display:none;color:var(--green);font-weight:600;margin-top:8px">✅ Сохранено — появится в SOS.</div>';
+    window._saveEP=function(){
+      var inputs=document.querySelectorAll('._ep');
+      var plan=Array.from(inputs).map(function(inp){return inp.value.trim()||inp.getAttribute('value');});
+      Storage.updateUser({emergencyPlan:plan});
+      var ok=document.getElementById('ep-ok');
+      if(ok)ok.style.display='block';
+      Toast.show('✅ Сохранено','success');
+    };
+  }
+  if(ex.type==='timeline_review') {
+    var u=data.user, pr=data.progress;
+    var qd=u.quitDate?new Date(u.quitDate):null;
+    var ds=qd?Math.max(0,Math.floor((Date.now()-qd)/86400000)):0;
+    var totalExAll=LEVELS.reduce(function(s,l){return s+l.exercises.length;},0);
+    body='<div class="card" style="margin-bottom:16px;text-align:center;background:linear-gradient(135deg,#F0FFF8,#EBF4FF)">'
+      +'<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:16px">ТВОЙ ПУТЬ</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">'
+      +'<div><div style="font-size:36px;font-weight:900;color:var(--green)">'+ds+'</div><div style="color:var(--text2);font-size:12px">чистых дней</div></div>'
+      +'<div><div style="font-size:36px;font-weight:900;color:var(--blue)">'+pr.exercisesCompleted.length+'</div><div style="color:var(--text2);font-size:12px">упражнений</div></div>'
+      +'<div><div style="font-size:36px;font-weight:900;color:var(--orange)">'+pr.achievements.length+'</div><div style="color:var(--text2);font-size:12px">достижений</div></div>'
+      +'<div><div style="font-size:28px;font-weight:900;color:var(--purple)">₽'+(pr.moneySaved||0).toLocaleString()+'</div><div style="color:var(--text2);font-size:12px">сэкономлено</div></div>'
+      +'</div>'
+      +'<div class="pbar" style="margin-bottom:6px"><div class="pbar-fill" style="width:'+Math.round(pr.exercisesCompleted.length/totalExAll*100)+'%"></div></div>'
+      +'<div style="font-size:12px;color:var(--text2)">'+pr.exercisesCompleted.length+' из '+totalExAll+' упражнений программы</div>'
+      +'</div>';
+  }
+  if(ex.type==='graduation') {
+    var allLvlAchs=ACHIEVEMENTS.filter(function(a){return a.cat==='level';});
+    body='<div class="card" style="margin-bottom:16px;text-align:center;background:linear-gradient(135deg,#FFFDE7,#E8F5E9)">'
+      +'<div style="font-size:64px;margin-bottom:12px" id="grad-star">🌟</div>'
+      +'<h3 style="font-size:22px;font-weight:800;margin-bottom:12px">Ты свободен!</h3>'
+      +ex.content.split('\n').map(function(p){return p?'<p style="font-size:14px;line-height:1.7;margin-bottom:4px">'+p+'</p>':'<br>';}).join('')
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">'
+      +allLvlAchs.map(function(a){
+        var earned=data.progress.achievements.includes(a.id);
+        return '<div style="text-align:center;padding:10px 4px;background:var(--card);border-radius:12px;border:1.5px solid '+(earned?'var(--green)':'var(--border)')+';">'
+          +'<div style="font-size:22px;opacity:'+(earned?1:0.3)+'">' +a.emoji+'</div>'
+          +'<div style="font-size:10px;color:var(--text2);margin-top:4px">'+a.name+'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+    setTimeout(function(){confetti('grad-star');},300);
+  }
+
   el.innerHTML = '<div class="screen">'
     + '<button onclick="App.navigate(\'\2\',{id:'+lvlId+'})" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
@@ -579,11 +813,13 @@ exercise(el, data, exId) {
     + body
     + (done
       ? '<button class="_back-ex" style="width:100%;padding:14px;background:var(--card);color:var(--text2);font-size:15px;font-weight:600;border-radius:12px;border:1.5px solid var(--border)">← К уровню</button>'
-      : ex.type==='read'||ex.type==='story'||ex.type==='metaphor'||ex.type==='reframe'||ex.type==='defusion'||ex.type==='self_compassion'||ex.type==='breathing'
+      : ['read','story','metaphor','reframe','defusion','self_compassion','breathing','values_compass','ifthen','red_zones','timeline_review'].includes(ex.type)
         ? '<button class="btn-primary" onclick="markDone()">✅ Упражнение завершено</button>'
-        : ex.type==='journal'||ex.type==='emotion'||ex.type==='bodymap'
+        : ['journal','emotion','bodymap','replacement_plan','habit_tracker'].includes(ex.type)
           ? '<button class="btn-primary" onclick="markDone()">Записать и завершить ✅</button>'
-          : '')
+          : ['daily_commit','letter_to_self','emergency_plan','graduation'].includes(ex.type)
+            ? '<button class="btn-primary" onclick="markDone()">✅ Завершить</button>'
+            : '')
     + '</div>';
 
   window.markDone = markDone;
@@ -633,8 +869,15 @@ urgeHelp(el, data) {
         compassion: '<div style="text-align:center;padding:20px 0"><div style="font-size:48px;margin-bottom:16px">🤲</div><p style="font-size:16px;line-height:1.8;color:var(--text)">Положи руку на грудь.<br><br><i>«Сейчас мне тяжело.<br>Это нормально.<br>Я делаю всё, что могу.<br>Я заслуживаю доброты.»</i><br><br>Повтори 3 раза, медленно.</p></div>',
         defuse: '<p style="font-size:15px;line-height:1.6;margin-bottom:16px">Вместо «Мне нужен стик» скажи:<br><b style="color:var(--blue)">"У меня есть мысль, что мне нужен стик"</b><br><br>Ты — не твои мысли.</p><input class="input" id="df-inp" placeholder="Твоя мысль..." style="margin-bottom:10px"><div id="df-out" style="color:var(--blue);font-weight:600;font-size:15px;min-height:40px;line-height:1.6"></div>',
         leaves: '<p style="font-size:15px;line-height:1.6;margin-bottom:16px">Запиши мысль и отпусти её 🍃</p><input class="input" id="lf-inp" placeholder="Мысль..."><button class="btn-primary" style="margin-top:10px" onclick="window._sosLeaf()">Отпустить</button><div id="lf-out" style="margin-top:12px;color:var(--green);font-size:14px"></div>',
-        plan: '<p style="font-size:16px;font-weight:700;margin-bottom:12px">Прежде чем взять устройство — сделай это:</p>'
-          + ['Сделай 10 глубоких вдохов','Выпей стакан воды','Выйди на свежий воздух на 2 минуты','Напиши кому-нибудь сообщение','Подожди ровно 5 минут'].map(function(t,i){return '<div class="card card-sm" style="margin-bottom:8px;display:flex;align-items:center;gap:12px"><div style="width:28px;height:28px;border-radius:50%;background:var(--orange-light);color:var(--orange);font-weight:700;display:flex;align-items:center;justify-content:center">'+(i+1)+'</div><div style="font-size:14px">'+t+'</div></div>';}).join('')
+        plan: (function(){
+          var ep = data.user.emergencyPlan || ['Сделай 10 глубоких вдохов','Выпей стакан воды','Выйди на свежий воздух на 2 минуты','Напиши кому-нибудь сообщение','Подожди ровно 5 минут'];
+          var letter = data.user.letterToSelf;
+          return '<p style="font-size:16px;font-weight:700;margin-bottom:12px">Прежде чем взять устройство — сделай это:</p>'
+            + ep.map(function(t,i){return '<div class="card card-sm" style="margin-bottom:8px;display:flex;align-items:center;gap:12px"><div style="width:28px;height:28px;border-radius:50%;background:var(--orange-light);color:var(--orange);font-weight:700;display:flex;align-items:center;justify-content:center">'+(i+1)+'</div><div style="font-size:14px">'+t+'</div></div>';}).join('')
+            + (letter ? '<div class="card" style="margin-top:12px;background:linear-gradient(135deg,#EBF4FF,#F0FFF8);border-color:rgba(91,141,239,.2)">'
+              +'<div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px">✉️ ПИСЬМО СЕБЕ</div>'
+              +'<div style="font-size:14px;line-height:1.6;color:var(--text)">'+letter+'</div></div>' : '');
+        })()
       };
       el.innerHTML = '<div class="screen"><button onclick="window._uBack2()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
         + '<div class="card" style="margin-bottom:20px">' + (bodies[window._sosTx]||bodies.plan) + '</div>'
@@ -874,25 +1117,124 @@ achievements(el, data) {
 
 journal(el, data) {
   var journal = data.journal || [];
-  el.innerHTML = '<div class="screen">'
-    + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">📔 Дневник</h2>'
-    + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Триггеры и наблюдения</p>'
-    + '<button class="btn-primary" style="margin-bottom:16px" onclick="App.navigate(\'\2\'\3">+ Записать тягу</button>'
-    + (journal.length===0
-      ? '<div class="card" style="text-align:center;padding:32px"><div style="font-size:32px;margin-bottom:8px">📭</div><div style="color:var(--text2)">Записей пока нет</div></div>'
-      : journal.slice(0,30).map(function(j){
-          var d = new Date(j.date);
-          var typeLabels = {body:'🫀 Тело',emotion:'💚 Эмоция',thought:'💭 Мысль',situation:'🌍 Ситуация'};
-          return '<div class="card card-sm" style="margin-bottom:8px">'
-            + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-            + '<div style="font-size:13px;font-weight:600;color:var(--text)">'+(typeLabels[j.type]||'Запись')+'</div>'
-            + '<div style="font-size:11px;color:var(--text3)">'+d.toLocaleDateString('ru')+'</div></div>'
-            + (j.intensity?'<div style="color:var(--text2);font-size:13px;margin-top:4px">Интенсивность: '+j.intensity+'/10</div>':'')
-            + '<div style="font-size:12px;margin-top:4px;padding:4px 10px;border-radius:10px;display:inline-block;background:'+(j.result==='won'?'var(--green-light)':'var(--red-light)')+';color:'+(j.result==='won'?'var(--green)':'var(--red)')+'font-weight:600">'+(j.result==='won'?'✓ Справился':'Использовал')+'</div>'
-            + '</div>';
-        }).join('')
-    )
-    + '</div>';
+  var valuesJournal = data.valuesJournal || [];
+  var activeTab = 0;
+  var filterType = 'all';
+  var typeLabels = {body:'🫁 Тело', emotion:'😰 Эмоция', thought:'💭 Мысль', situation:'📍 Ситуация'};
+
+  function buildList(filter) {
+    var arr = filter==='all' ? journal : journal.filter(function(j){return j.type===filter;});
+    if(!arr.length) {
+      return '<div class="card" style="text-align:center;padding:24px"><div style="font-size:28px;margin-bottom:6px">📭</div>'
+        +'<div style="color:var(--text2);font-size:14px">'+(journal.length===0?'Нет записей. Нажми «Записать тягу».':'Нет записей этого типа.')+'</div></div>';
+    }
+    return arr.slice(0,30).map(function(j){
+      var d=new Date(j.date);
+      var time=d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+      return '<div class="card card-sm" style="margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<div style="font-size:13px;font-weight:600">'+(typeLabels[j.type]||'Запись')+'</div>'
+        +'<div style="font-size:11px;color:var(--text3)">'+d.toLocaleDateString('ru')+' '+time+'</div></div>'
+        +(j.intensity?'<div style="color:var(--text2);font-size:12px;margin-top:4px">Интенсивность: '+j.intensity+'/10</div>':'')
+        +'<div style="font-size:12px;margin-top:6px;padding:3px 10px;border-radius:10px;display:inline-block;background:'+(j.result==='won'?'var(--green-light)':'var(--red-light)')+';color:'+(j.result==='won'?'var(--green)':'var(--red)')+';font-weight:600">'+(j.result==='won'?'✓ Справился':'Использовал')+'</div>'
+        +'</div>';
+    }).join('');
+  }
+
+  function buildAnalytics() {
+    if(!journal.length) return '';
+    var won=journal.filter(function(j){return j.result==='won';}).length;
+    var rate=Math.round(won/journal.length*100);
+    var tc={body:0,emotion:0,thought:0,situation:0};
+    journal.forEach(function(j){if(tc[j.type]!==undefined)tc[j.type]++;});
+    var maxC=Math.max.apply(null,Object.keys(tc).map(function(k){return tc[k];}));
+    return '<div class="card" style="margin-bottom:14px">'
+      +'<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">АНАЛИТИКА ТРИГГЕРОВ</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+      +'<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:var(--blue)">'+journal.length+'</div><div style="font-size:12px;color:var(--text2)">записей тяги</div></div>'
+      +'<div style="text-align:center"><div style="font-size:28px;font-weight:800;color:var(--green)">'+rate+'%</div><div style="font-size:12px;color:var(--text2)">успешных</div></div>'
+      +'</div>'
+      +Object.keys(tc).map(function(k){
+        var pct=maxC>0?Math.round(tc[k]/maxC*100):0;
+        return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
+          +'<div style="font-size:12px;width:82px;flex-shrink:0">'+typeLabels[k]+'</div>'
+          +'<div style="flex:1;height:6px;background:var(--border);border-radius:3px"><div style="height:100%;border-radius:3px;background:var(--blue);width:'+pct+'%"></div></div>'
+          +'<div style="font-size:12px;color:var(--text2);width:18px;text-align:right">'+tc[k]+'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+  }
+
+  function render(tab) {
+    activeTab = tab;
+    var triggersContent = '<button class="btn-primary" style="margin-bottom:14px" id="sos-link-btn">🆘 Записать тягу</button>'
+      + buildAnalytics()
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">'
+      + [['all','Все'],['body','Тело'],['emotion','Эмоция'],['thought','Мысль'],['situation','Ситуация']]
+          .map(function(f){return '<button class="chip _jf'+(filterType===f[0]?' on':'')+'" data-f="'+f[0]+'">'+f[1]+'</button>';}).join('')
+      + '</div><div id="j-list">'+buildList(filterType)+'</div>';
+
+    var valuesContent = '<button class="btn-primary" style="margin-bottom:14px" id="vj-add-btn">+ Записать действие</button>'
+      + '<div id="vj-form" style="display:none" class="card" style="margin-bottom:14px">'
+      + '<p style="font-size:13px;color:var(--text2);margin-bottom:8px">Что ты сделал(а) сегодня в направлении своих ценностей?</p>'
+      + '<textarea class="input" id="vj-inp" style="height:80px;resize:none;display:block;margin-bottom:8px" placeholder="Например: позвонил маме, пробежал 3 км, отложил 300₽..."></textarea>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button class="btn-primary" style="flex:1" id="vj-save-btn">Сохранить ✅</button>'
+      + '<button style="padding:12px 14px;background:var(--bg);border-radius:10px;color:var(--text2);font-size:14px" id="vj-cancel-btn">✕</button>'
+      + '</div></div>'
+      + (valuesJournal.length===0
+        ? '<div class="card" style="text-align:center;padding:28px"><div style="font-size:28px;margin-bottom:8px">🌱</div><div style="color:var(--text2);font-size:14px">Здесь будут твои ценностные действия.<br>Начни с уровня 5.</div></div>'
+        : valuesJournal.slice(0,20).map(function(e){
+            var d=new Date(e.date);
+            return '<div class="card card-sm" style="margin-bottom:8px">'
+              +'<div style="font-size:11px;color:var(--text3);margin-bottom:4px">'+d.toLocaleDateString('ru',{weekday:'short',day:'numeric',month:'long'})+'</div>'
+              +'<div style="font-size:14px;line-height:1.5">'+e.text+'</div>'
+              +'</div>';
+          }).join(''));
+
+    el.innerHTML = '<div class="screen">'
+      + '<h2 style="font-size:22px;font-weight:800;margin-bottom:14px">📔 Дневник</h2>'
+      + '<div style="display:flex;gap:8px;margin-bottom:16px">'
+      + '<button class="chip _tab'+(activeTab===0?' on':'')+'" data-t="0">Триггеры</button>'
+      + '<button class="chip _tab'+(activeTab===1?' on':'')+'" data-t="1">Ценности</button>'
+      + '</div>'
+      + (activeTab===0 ? triggersContent : valuesContent)
+      + '</div>';
+
+    document.querySelectorAll('._tab').forEach(function(b){
+      b.onclick=function(){render(+b.dataset.t);};
+    });
+    if(activeTab===0){
+      var sosBtn=document.getElementById('sos-link-btn');
+      if(sosBtn) sosBtn.onclick=function(){App.navigate('urge-help');};
+      document.querySelectorAll('._jf').forEach(function(b){
+        b.onclick=function(){
+          filterType=b.dataset.f;
+          document.querySelectorAll('._jf').forEach(function(x){x.classList.remove('on');});
+          b.classList.add('on');
+          var lst=document.getElementById('j-list');
+          if(lst) lst.innerHTML=buildList(filterType);
+        };
+      });
+    }
+    if(activeTab===1){
+      var addBtn=document.getElementById('vj-add-btn');
+      var form=document.getElementById('vj-form');
+      if(addBtn&&form) addBtn.onclick=function(){form.style.display='block';addBtn.style.display='none';};
+      var cancelBtn=document.getElementById('vj-cancel-btn');
+      if(cancelBtn) cancelBtn.onclick=function(){if(form)form.style.display='none';if(addBtn)addBtn.style.display='block';};
+      var saveBtn=document.getElementById('vj-save-btn');
+      if(saveBtn) saveBtn.onclick=function(){
+        var inp=document.getElementById('vj-inp');
+        if(!inp||!inp.value.trim()){Toast.show('Напиши что-нибудь','warn');return;}
+        Storage.addValuesEntry({type:'action',text:inp.value.trim(),valueId:'general'});
+        Toast.show('✅ Записано','success');
+        valuesJournal=Storage.get().valuesJournal||[];
+        render(1);
+      };
+    }
+  }
+  render(0);
 },
 
 settings(el, data) {
