@@ -3,9 +3,34 @@
 const App = {
   currentScreen: null,
   prevScreen: null,
+  history: [],
+  screenTitles: {
+    welcome: 'Дыши Свободно',
+    home: 'Главная',
+    levels: 'Уровни',
+    level: 'Уровень',
+    exercise: 'Упражнение',
+    'urge-help': 'Помощь при тяге',
+    tracker: 'Трекер',
+    stats: 'Прогресс',
+    breathing: 'Дыхание',
+    health: 'Восстановление',
+    savings: 'Сбережения',
+    achievements: 'Достижения',
+    journal: 'Дневник',
+    settings: 'Настройки'
+  },
 
-  navigate(screen, params) {
+  navigate(screen, params, options) {
     params = params || {};
+    options = options || {};
+    if(!options.skipHistory && this.currentScreen && this.currentScreen !== screen) {
+      this.history.push(this.currentScreen);
+    }
+    var data = Storage.get() || Storage.init();
+    if(!data.user.setupComplete && screen !== 'welcome') {
+      screen = 'welcome';
+    }
     this.prevScreen = this.currentScreen;
     this.currentScreen = screen;
     window.scrollTo(0,0);
@@ -14,14 +39,9 @@ const App = {
     var tabbar = document.getElementById('tabbar');
     var tabScreens = ['home','levels','journal','stats','settings'];
     if(tabbar) tabbar.classList.toggle('hd', !tabScreens.includes(screen));
+    this._updateTopbar(screen, tabScreens.includes(screen));
     this._updateTabbar(screen);
     var app = document.getElementById('app');
-    var data = Storage.get() || Storage.init();
-    if(!data.user.setupComplete && screen !== 'welcome') {
-      this.currentScreen = 'welcome';
-      Screens.welcome(app, data);
-      return;
-    }
     switch(screen) {
       case 'welcome':      Screens.welcome(app, data); break;
       case 'home':         Screens.home(app, data); break;
@@ -41,12 +61,27 @@ const App = {
     }
   },
 
-  back() { this.navigate(this.prevScreen || 'home'); },
+  back() {
+    var target = this.history.pop() || this.prevScreen || 'home';
+    this.navigate(target, null, { skipHistory: true });
+  },
 
   _updateTabbar(active) {
     document.querySelectorAll('.tab-btn').forEach(function(b){
       b.classList.toggle('active', b.dataset.screen === active);
     });
+  },
+
+  _updateTopbar(screen, isTabScreen) {
+    var topbar = document.getElementById('topbar');
+    var title = document.getElementById('topbar-title');
+    var back = document.getElementById('topbar-back');
+    if(!topbar || !title || !back) return;
+    var show = !isTabScreen;
+    topbar.classList.toggle('hd', !show);
+    title.textContent = this.screenTitles[screen] || 'Дыши Свободно';
+    back.disabled = this.history.length === 0 && !this.prevScreen;
+    back.classList.toggle('disabled', back.disabled);
   },
 
   init() {
