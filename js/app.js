@@ -136,21 +136,21 @@ welcome(el, data) {
       + '<button class="btn-primary" onclick="window._ws(1)">Начать →</button></div>';
   }
   function s1() {
-    var devs = [['pod','Pod-система','💨'],['mod','Мод','⚙️'],['disposable','Одноразка','🗑'],['other','Другое','❓']];
+    var devs = [['iqos','IQOS','🔵'],['glo','glo','🟢'],['ploom','Ploom','🟣'],['other','Другое','❓']];
     return '<h2 style="font-size:22px;font-weight:800;margin-bottom:6px">Расскажи о себе</h2>'
       + '<p style="color:var(--text2);font-size:14px;margin-bottom:24px">Данные хранятся только на устройстве</p>'
       + '<div class="input-group"><label class="input-label">КАК ТЕБЯ ЗОВУТ?</label>'
       + '<input class="input" id="inp-name" placeholder="Имя" value="' + (draft.name||'') + '"></div>'
-      + '<div class="input-group"><label class="input-label">ТИП УСТРОЙСТВА</label>'
+      + '<div class="input-group"><label class="input-label">УСТРОЙСТВО</label>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
       + devs.map(function(d){ return '<button class="chip _dt'+(draft.deviceType===d[0]?' on':'')+'" data-val="'+d[0]+'">'+d[2]+' '+d[1]+'</button>'; }).join('')
       + '</div></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
-      + '<div><label class="input-label">ЗАТЯЖЕК/ДЕНЬ</label><input class="input" id="inp-puffs" type="number" inputmode="numeric" value="'+(draft.dailyPuffs||200)+'"></div>'
-      + '<div><label class="input-label">РАСХОДЫ ₽/ДЕНЬ</label><input class="input" id="inp-cost" type="number" inputmode="numeric" value="'+(draft.dailyCost||200)+'"></div>'
+      + '<div><label class="input-label">СТИКОВ/ДЕНЬ</label><input class="input" id="inp-puffs" type="number" inputmode="numeric" value="'+(draft.dailyPuffs||20)+'"></div>'
+      + '<div><label class="input-label">ЦЕНА ПАЧКИ (₽)</label><input class="input" id="inp-cost" type="number" inputmode="numeric" value="'+(draft.packPrice||350)+'"></div>'
       + '</div>'
-      + '<div class="input-group"><label class="input-label">КРЕПОСТЬ: <span id="nic-val">'+(draft.nicotineStrength||20)+'</span> мг/мл</label>'
-      + '<input type="range" min="0" max="50" value="'+(draft.nicotineStrength||20)+'" oninput="document.getElementById(&quot;nic-val&quot;).textContent=this.value;window._dNic=+this.value"></div>'
+      + '<div class="input-group" style="margin-bottom:16px"><label class="input-label">СТИКОВ В ПАЧКЕ</label>'
+      + '<input class="input" id="inp-packsize" type="number" inputmode="numeric" value="'+(draft.packSize||20)+'"></div>'
       + '<button class="btn-primary" onclick="window._ws(2)">Продолжить →</button>';
   }
   function s2() {
@@ -204,7 +204,6 @@ welcome(el, data) {
   }
   function bindStep(s) {
     if (s===1) {
-      window._dNic = draft.nicotineStrength||20;
       document.querySelectorAll('._dt').forEach(function(b){
         b.onclick=function(){ draft.deviceType=b.dataset.val; document.querySelectorAll('._dt').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); };
       });
@@ -232,9 +231,10 @@ welcome(el, data) {
       var name=document.getElementById('inp-name').value.trim();
       if(!name){Toast.show('Введи своё имя','warn');return;}
       draft.name=name;
-      draft.dailyPuffs=+document.getElementById('inp-puffs').value||200;
-      draft.dailyCost=+document.getElementById('inp-cost').value||200;
-      draft.nicotineStrength=window._dNic||20;
+      draft.dailyPuffs=+document.getElementById('inp-puffs').value||20;
+      draft.packPrice=+document.getElementById('inp-cost').value||350;
+      draft.packSize=+document.getElementById('inp-packsize').value||20;
+      draft.dailyCost=Math.round(draft.dailyPuffs*(draft.packPrice/draft.packSize));
     }
     if(step===3){draft.quitDate=document.getElementById('inp-date').value;}
     if(step===4&&(!draft.values||draft.values.length===0)){Toast.show('Выбери хотя бы одну ценность','warn');return;}
@@ -273,7 +273,7 @@ home(el, data) {
     + '<div style="font-size:22px;font-weight:800;margin-top:2px">'
     + (isPrepPhase ? 'До дня X: ' + daysToQuit + ' ' + (daysToQuit===1?'день':daysToQuit<5?'дня':'дней')
       : daysSinceQuit===0 ? 'Сегодня — день отказа!'
-      : 'День ' + daysSinceQuit + ' без вейпа') + '</div></div>'
+      : 'День ' + daysSinceQuit + ' без стиков') + '</div></div>'
     + '<div style="text-align:right"><div style="font-size:12px;color:var(--text2)">Уровень ' + lvlNum + '/4</div>'
     + '<div style="font-size:12px;color:var(--green);font-weight:700">🔥 Серия: ' + streak + ' ' + (streak===1?'день':streak<5?'дня':'дней') + '</div></div>'
     + '</div>'
@@ -302,14 +302,14 @@ home(el, data) {
     + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate(\'\2\'\3">'
     + '<div style="font-size:20px;margin-bottom:4px">📊</div>'
     + '<div style="font-weight:700;font-size:14px">Трекер</div>'
-    + '<div style="color:var(--text2);font-size:12px">Сегодня: ' + todayLog.puffs + ' затяжек</div>'
+    + '<div style="color:var(--text2);font-size:12px">Сегодня: ' + todayLog.puffs + ' стиков</div>'
     + '</button></div>'
     // Stats
     + '<div class="stats-grid" style="margin-bottom:12px">'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'
     + (p.moneySaved||0).toLocaleString() + ' ₽</div><div class="stat-label">Сэкономлено</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">'
-    + (p.totalPuffsAvoided||0).toLocaleString() + '</div><div class="stat-label">Затяжек пропущено</div></div>'
+    + (p.totalPuffsAvoided||0).toLocaleString() + '</div><div class="stat-label">Стиков не выкурено</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--orange)">' + p.achievements.length + '/' + ACHIEVEMENTS.length + '</div><div class="stat-label">Достижений</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--purple)">'
     + (healthNext ? fmtMins(healthNext.mins - daysSinceQuit*1440) + ' → веха' : '✓ год!')
@@ -631,9 +631,9 @@ urgeHelp(el, data) {
         emotion: '<p style="font-size:16px;font-weight:700;margin-bottom:16px">Что именно ты чувствуешь?</p><div style="display:flex;flex-wrap:wrap;gap:8px">'
           + ['Тревога','Стресс','Скука','Грусть','Злость','Одиночество'].map(function(e){return '<button class="chip _semo" data-e="'+e+'">'+e+'</button>';}).join('')+'</div><div id="se-r" style="min-height:60px;margin-top:16px;font-size:15px;color:var(--text);line-height:1.6;background:var(--bg);border-radius:12px;padding:14px;display:none"></div>',
         compassion: '<div style="text-align:center;padding:20px 0"><div style="font-size:48px;margin-bottom:16px">🤲</div><p style="font-size:16px;line-height:1.8;color:var(--text)">Положи руку на грудь.<br><br><i>«Сейчас мне тяжело.<br>Это нормально.<br>Я делаю всё, что могу.<br>Я заслуживаю доброты.»</i><br><br>Повтори 3 раза, медленно.</p></div>',
-        defuse: '<p style="font-size:15px;line-height:1.6;margin-bottom:16px">Вместо «Мне нужна затяжка» скажи:<br><b style="color:var(--blue)">"У меня есть мысль, что мне нужна затяжка"</b><br><br>Ты — не твои мысли.</p><input class="input" id="df-inp" placeholder="Твоя мысль..." style="margin-bottom:10px"><div id="df-out" style="color:var(--blue);font-weight:600;font-size:15px;min-height:40px;line-height:1.6"></div>',
+        defuse: '<p style="font-size:15px;line-height:1.6;margin-bottom:16px">Вместо «Мне нужен стик» скажи:<br><b style="color:var(--blue)">"У меня есть мысль, что мне нужен стик"</b><br><br>Ты — не твои мысли.</p><input class="input" id="df-inp" placeholder="Твоя мысль..." style="margin-bottom:10px"><div id="df-out" style="color:var(--blue);font-weight:600;font-size:15px;min-height:40px;line-height:1.6"></div>',
         leaves: '<p style="font-size:15px;line-height:1.6;margin-bottom:16px">Запиши мысль и отпусти её 🍃</p><input class="input" id="lf-inp" placeholder="Мысль..."><button class="btn-primary" style="margin-top:10px" onclick="window._sosLeaf()">Отпустить</button><div id="lf-out" style="margin-top:12px;color:var(--green);font-size:14px"></div>',
-        plan: '<p style="font-size:16px;font-weight:700;margin-bottom:12px">Прежде чем взять вейп — сделай это:</p>'
+        plan: '<p style="font-size:16px;font-weight:700;margin-bottom:12px">Прежде чем взять устройство — сделай это:</p>'
           + ['Сделай 10 глубоких вдохов','Выпей стакан воды','Выйди на свежий воздух на 2 минуты','Напиши кому-нибудь сообщение','Подожди ровно 5 минут'].map(function(t,i){return '<div class="card card-sm" style="margin-bottom:8px;display:flex;align-items:center;gap:12px"><div style="width:28px;height:28px;border-radius:50%;background:var(--orange-light);color:var(--orange);font-weight:700;display:flex;align-items:center;justify-content:center">'+(i+1)+'</div><div style="font-size:14px">'+t+'</div></div>';}).join('')
       };
       el.innerHTML = '<div class="screen"><button onclick="window._uBack2()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
@@ -695,15 +695,15 @@ tracker(el, data) {
       + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Трекер дня</h2>'
       + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">' + new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'}) + '</p>'
       + '<div class="card" style="margin-bottom:12px">'
-      + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">ЗАТЯЖЕК СЕГОДНЯ</div>'
+      + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">СТИКОВ СЕГОДНЯ</div>'
       + '<div style="display:flex;align-items:center;justify-content:center;gap:24px">'
       + '<button class="counter-btn" onclick="window._adj(-1)">−</button>'
       + '<div style="text-align:center"><div style="font-size:56px;font-weight:900;color:'+col+';line-height:1">'+puffs+'</div>'
-      + '<div style="color:var(--text2);font-size:13px;margin-top:4px">'+(u.dailyPuffs?'из '+u.dailyPuffs+' обычных':'затяжек')+'</div></div>'
+      + '<div style="color:var(--text2);font-size:13px;margin-top:4px">'+(u.dailyPuffs?'из '+u.dailyPuffs+' стиков':'стиков')+'</div></div>'
       + '<button class="counter-btn" onclick="window._adj(1)">+</button>'
       + '</div>'
       + (puffs===0?'<div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:12px;color:var(--green);font-weight:700;text-align:center;font-size:15px" id="cday-msg">🎉 Чистый день!</div>':'')
-      + (isPrepPhase&&goalPuffs?'<div class="pbar" style="margin-top:16px"><div class="pbar-fill" style="width:'+Math.min(100,Math.round((1-puffs/goalPuffs)*100))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' затяжек</div>':'')
+      + (isPrepPhase&&goalPuffs?'<div class="pbar" style="margin-top:16px"><div class="pbar-fill" style="width:'+Math.min(100,Math.round((1-puffs/goalPuffs)*100))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' стиков</div>':'')
       + '</div>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">НАСТРОЕНИЕ</div>'
@@ -904,18 +904,21 @@ settings(el, data) {
     + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">ПРОФИЛЬ</div>'
     + '<div class="input-group"><label class="input-label">ИМЯ</label><input class="input" id="s-name" value="'+(u.name||'')+'"></div>'
     + '<div class="input-group"><label class="input-label">ДАТА ОТКАЗА</label><input class="input" id="s-date" type="date" value="'+(u.quitDate?u.quitDate.split('T')[0]:'')+'"></div>'
-    + '<div class="input-group"><label class="input-label">РАСХОДЫ ₽/ДЕНЬ</label><input class="input" id="s-cost" type="number" value="'+(u.dailyCost||200)+'"></div>'
-    + '<div class="input-group" style="margin:0"><label class="input-label">ЗАТЯЖЕК/ДЕНЬ</label><input class="input" id="s-puffs" type="number" value="'+(u.dailyPuffs||200)+'"></div>'
+    + '<div class="input-group"><label class="input-label">ЦЕНА ПАЧКИ (₽)</label><input class="input" id="s-cost" type="number" value="'+(u.packPrice||u.dailyCost||350)+'"></div>'
+    + '<div class="input-group" style="margin:0"><label class="input-label">СТИКОВ/ДЕНЬ</label><input class="input" id="s-puffs" type="number" value="'+(u.dailyPuffs||20)+'"></div>'
     + '</div>'
     + '<button class="btn-primary" style="margin-bottom:10px" onclick="window._saveSettings()">💾 Сохранить</button>'
     + '<button class="btn-danger" onclick="window._resetApp()">⟲ Сбросить все данные</button>'
     + '</div>';
   window._saveSettings=function(){
+    var packP=+document.getElementById('s-cost').value||(u.packPrice||350);
+    var sticks=+document.getElementById('s-puffs').value||(u.dailyPuffs||20);
     Storage.updateUser({
       name:document.getElementById('s-name').value||u.name,
       quitDate:document.getElementById('s-date').value||u.quitDate,
-      dailyCost:+document.getElementById('s-cost').value||u.dailyCost,
-      dailyPuffs:+document.getElementById('s-puffs').value||u.dailyPuffs
+      packPrice:packP,
+      dailyPuffs:sticks,
+      dailyCost:Math.round(sticks*(packP/(u.packSize||20)))
     });
     Toast.show('✅ Сохранено','success');
   };

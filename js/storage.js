@@ -20,8 +20,8 @@ const Storage = {
     const fresh = {
       user: {
         name: '', quitDate: null, quitMethod: 'cold',
-        deviceType: 'pod', nicotineStrength: 20,
-        dailyPuffs: 200, dailyCost: 200,
+        deviceType: 'iqos',
+        dailyPuffs: 20, packPrice: 350, packSize: 20, dailyCost: 350,
         values: [], currentLevel: 1, setupComplete: false
       },
       progress: {
@@ -126,11 +126,11 @@ const Storage = {
     d.progress.smokeFreedays = Object.values(logs).filter(l => l.puffs === 0).length;
     // Money saved
     const u = d.user;
-    if (u.quitDate && u.dailyCost) {
-      const daysSince = Math.max(0, Math.floor((Date.now() - new Date(u.quitDate)) / 86400000));
-      const puffsSaved = Object.values(logs).reduce((s, l) => s + Math.max(0, u.dailyPuffs - l.puffs), 0);
-      d.progress.totalPuffsAvoided = puffsSaved;
-      d.progress.moneySaved = Math.round(daysSince * u.dailyCost * (puffsSaved / Math.max(1, daysSince * u.dailyPuffs)));
+    if (u.quitDate && u.dailyPuffs) {
+      const sticksSaved = Object.values(logs).reduce((s, l) => s + Math.max(0, u.dailyPuffs - l.puffs), 0);
+      d.progress.totalPuffsAvoided = sticksSaved;
+      const costPerStick = (u.packPrice || u.dailyCost || 350) / (u.packSize || 20);
+      d.progress.moneySaved = Math.round(sticksSaved * costPerStick);
     }
   },
 
