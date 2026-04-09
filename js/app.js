@@ -80,6 +80,8 @@ const App = {
     var show = !isTabScreen;
     topbar.classList.toggle('hd', !show);
     title.textContent = this.screenTitles[screen] || 'Дыши Свободно';
+    var hideBackInTopbar = ['urge-help'].includes(screen);
+    back.classList.toggle('hd', hideBackInTopbar);
     back.disabled = this.history.length === 0 && !this.prevScreen;
     back.classList.toggle('disabled', back.disabled);
   },
@@ -486,7 +488,6 @@ levelDetail(el, data, lvlId) {
   if(!lvl){App.navigate('levels');return;}
   var doneEx = data.progress.exercisesCompleted || [];
   var html = '<div class="screen">'
-    + '<button class="_back-levels" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
     + '<div style="text-align:center;padding:16px 0 24px">'
     + '<div style="font-size:48px;margin-bottom:8px">' + lvl.emoji + '</div>'
     + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Уровень ' + lvl.id + ': ' + lvl.title + '</h2>'
@@ -510,7 +511,6 @@ levelDetail(el, data, lvlId) {
   }
   html += '</div>';
   el.innerHTML = html;
-  el.querySelector('._back-levels').onclick = function() { App.navigate('levels'); };
   el.querySelectorAll('.exercise-card').forEach(function(card) {
     card.onclick = function() { App.navigate('exercise', {id: card.dataset.exid}); };
   });
@@ -900,7 +900,6 @@ exercise(el, data, exId) {
   }
 
   el.innerHTML = '<div class="screen">'
-    + '<button onclick="App.navigate(\'level\',{id:'+lvlId+'})" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
     + '<div style="font-size:36px">'+ex.emoji+'</div>'
     + '<div><h2 style="font-size:20px;font-weight:800">'+ex.title+'</h2>'
@@ -948,7 +947,7 @@ urgeHelp(el, data) {
         situation: [{emoji:'⚡',title:'Экстренный план',action:function(){window._sosTx='plan';render(2);}},{emoji:'💨',title:'Дыхание 4-7-8',action:function(){App.navigate('breathing');}}]
       };
       var exs = exercises[urgeType]||exercises.body;
-      el.innerHTML = '<div class="screen"><button onclick="window._uBack()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
+      el.innerHTML = '<div class="screen"><button onclick="window._uBack()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← К выбору состояния</button>'
         + '<h2 style="font-size:22px;font-weight:800;margin-bottom:6px">Выбери упражнение</h2>'
         + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Одной минуты может хватить</p>'
         + exs.map(function(e,i){return '<div class="card" style="cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:14px" onclick="window._sosEx('+i+')"><div style="font-size:32px">'+e.emoji+'</div><div style="font-weight:700;font-size:16px">'+e.title+'</div><div style="margin-left:auto;color:var(--text3)">›</div></div>';}).join('')
@@ -976,9 +975,9 @@ urgeHelp(el, data) {
               +'<div style="font-size:14px;line-height:1.6;color:var(--text)">'+letter+'</div></div>' : '');
         })()
       };
-      el.innerHTML = '<div class="screen"><button onclick="window._uBack2()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
+      el.innerHTML = '<div class="screen"><button onclick="window._uBack2()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← К упражнениям</button>'
         + '<div class="card" style="margin-bottom:20px">' + (bodies[window._sosTx]||bodies.plan) + '</div>'
-        + '<button class="btn-primary" onclick="render(3)">Проверить интенсивность →</button></div>';
+        + '<button class="btn-primary" onclick="render(3)">Оценить тягу (шаг 3 из 4) →</button></div>';
       window._uBack2=function(){render(1);};
       window._startSosWave=function(){var d=document.getElementById('wt'),b=document.getElementById('wbtn');if(!d||!b)return;b.disabled=true;b.textContent='Идёт...';var r=300,iv=setInterval(function(){r--;if(d)d.textContent=Math.floor(r/60)+':'+String(r%60).padStart(2,'0');if(r<=0){clearInterval(iv);render(3);}},1000);};
       window._sosLeaf=function(){var i=document.getElementById('lf-inp'),o=document.getElementById('lf-out');if(i&&i.value.trim()&&o){o.textContent='🍃 «'+i.value+'» — отпущено';i.value='';}};
