@@ -12,7 +12,7 @@ const App = {
     var fab = document.getElementById('sos-btn');
     if(fab) fab.classList.toggle('hd', ['welcome','breathing','urge-help'].includes(screen));
     var tabbar = document.getElementById('tabbar');
-    var tabScreens = ['home','levels','tracker','journal','achievements'];
+    var tabScreens = ['home','levels','journal','stats','settings'];
     if(tabbar) tabbar.classList.toggle('hd', !tabScreens.includes(screen));
     this._updateTabbar(screen);
     var app = document.getElementById('app');
@@ -30,6 +30,7 @@ const App = {
       case 'exercise':     Screens.exercise(app, data, params.id); break;
       case 'urge-help':    Screens.urgeHelp(app, data); break;
       case 'tracker':      Screens.tracker(app, data); break;
+      case 'stats':        Screens.stats(app, data); break;
       case 'breathing':    Screens.breathing(app, data); break;
       case 'health':       Screens.health(app, data); break;
       case 'savings':      Screens.savings(app, data); break;
@@ -59,6 +60,8 @@ const App = {
     if('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(function(){});
     }
+    maybeSendDailyReminder(false);
+    setInterval(function(){ maybeSendDailyReminder(false); }, 60000);
   }
 };
 
@@ -89,6 +92,22 @@ function fmtDays(d) {
   return d + ' дней';
 }
 function today() { return new Date().toISOString().split('T')[0]; }
+function maybeSendDailyReminder(forceNow) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  var data = Storage.get() || {};
+  var st = data.settings || {};
+  if (!st.notifications) return;
+  var reminder = st.reminderTime || '20:00';
+  var now = new Date();
+  var hm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  var lastKey = 'breathe_last_notification_date';
+  var sentDate = localStorage.getItem(lastKey);
+  var todayKey = today();
+  if ((forceNow || hm >= reminder) && sentDate !== todayKey) {
+    new Notification('Дыши Свободно', { body: 'Как прошёл день? Запиши в дневник 📝', icon: 'icons/icon-192.png' });
+    localStorage.setItem(lastKey, todayKey);
+  }
+}
 function confetti(elId) {
   var el = typeof elId==='string' ? document.getElementById(elId) : elId;
   if(!el) return;
@@ -149,11 +168,18 @@ welcome(el, data) {
       + '<div><label class="input-label">СТИКОВ/ДЕНЬ</label><input class="input" id="inp-puffs" type="number" inputmode="numeric" value="'+(draft.dailyPuffs||20)+'"></div>'
       + '<div><label class="input-label">ЦЕНА ПАЧКИ (₽)</label><input class="input" id="inp-cost" type="number" inputmode="numeric" value="'+(draft.packPrice||350)+'"></div>'
       + '</div>'
+      + '<div class="input-group"><label class="input-label">КРЕПОСТЬ НИКОТИНА (мг/мл)</label>'
+      + '<input class="input" id="inp-nic" type="number" min="0" max="50" inputmode="decimal" value="'+(draft.nicotineStrength||20)+'"></div>'
       + '<div class="input-group" style="margin-bottom:16px"><label class="input-label">СТИКОВ В ПАЧКЕ</label>'
       + '<input class="input" id="inp-packsize" type="number" inputmode="numeric" value="'+(draft.packSize||20)+'"></div>'
       + '<button class="btn-primary" onclick="window._ws(2)">Продолжить →</button>';
   }
   function s2() {
+    var gradualPct = draft.gradualReductionPct || 20;
+    var basePuffs = +draft.dailyPuffs || 20;
+    var weeksToZero = Math.max(2, Math.ceil(Math.log(1 / basePuffs) / Math.log(1 - gradualPct / 100)));
+    var projectedQuit = new Date();
+    projectedQuit.setDate(projectedQuit.getDate() + weeksToZero * 7);
     return '<h2 style="font-size:22px;font-weight:800;margin-bottom:6px">Метод отказа</h2>'
       + '<p style="color:var(--text2);font-size:14px;margin-bottom:24px">Оба подхода работают</p>'
       + '<div class="method-card _method'+(draft.quitMethod==='cold'?' on':'')+'" data-val="cold" style="margin-bottom:12px">'
@@ -163,7 +189,12 @@ welcome(el, data) {
       + '<div class="method-card _method'+(draft.quitMethod!=='cold'?' on':'')+'" data-val="gradual" style="margin-bottom:24px">'
       + '<div style="font-size:24px;margin-bottom:6px">📉</div>'
       + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Постепенное снижение</div>'
-      + '<div style="color:var(--text2);font-size:14px">Снижать дозу и количество затяжек по плану.</div></div>'
+      + '<div style="color:var(--text2);font-size:14px">Снижать дозу и количество затяжек по плану.</div>'
+      + '<div id="gradual-extra" style="display:'+(draft.quitMethod==='gradual'?'block':'none')+';margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">'
+      + '<label class="input-label">СНИЖЕНИЕ В НЕДЕЛЮ: <span id="grad-pct">' + gradualPct + '</span>%</label>'
+      + '<input type="range" min="10" max="30" step="5" value="' + gradualPct + '" id="grad-slider">'
+      + '<div style="font-size:12px;color:var(--text2);margin-top:8px">Прогноз финальной даты: <b id="grad-date">' + projectedQuit.toLocaleDateString('ru-RU') + '</b></div>'
+      + '</div></div>'
       + '<button class="btn-primary" onclick="window._ws(3)">Продолжить →</button>';
   }
   function s3() {
@@ -173,8 +204,11 @@ welcome(el, data) {
     var minStr = now.toISOString().split('T')[0];
     return '<h2 style="font-size:22px;font-weight:800;margin-bottom:6px">Дата отказа</h2>'
       + '<p style="color:var(--text2);font-size:14px;margin-bottom:24px">1–2 недели подготовки повышают шансы</p>'
-      + '<div class="input-group"><label class="input-label">ДАТА ОТКАЗА</label>'
+      + '<div class="input-group"><label class="input-label">'+(draft.quitMethod==='gradual'?'ФИНАЛЬНАЯ ДАТА ОТКАЗА':'ДАТА ОТКАЗА')+'</label>'
       + '<input class="input" id="inp-date" type="date" value="'+(draft.quitDate||recStr)+'" min="'+minStr+'"></div>'
+      + (draft.quitMethod==='gradual'
+        ? '<div class="input-group"><label class="input-label">ДАТА НАЧАЛА СНИЖЕНИЯ</label><input class="input" id="inp-grad-start" type="date" value="'+((draft.gradualStartDate||minStr).split('T')[0])+'" min="'+minStr+'"></div>'
+        : '')
       + '<div class="card" style="background:var(--green-light);border-color:rgba(76,175,130,.2);margin-bottom:24px">'
       + '<div style="color:var(--green);font-size:14px">💡 Рекомендуем через 7 дней — используй время для прохождения уровней 1–4.</div></div>'
       + '<button class="btn-primary" onclick="window._ws(4)">Продолжить →</button>';
@@ -210,8 +244,29 @@ welcome(el, data) {
     }
     if (s===2) {
       document.querySelectorAll('._method').forEach(function(b){
-        b.onclick=function(){ draft.quitMethod=b.dataset.val; document.querySelectorAll('._method').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); };
+        b.onclick=function(){
+          draft.quitMethod=b.dataset.val;
+          document.querySelectorAll('._method').forEach(function(x){x.classList.remove('on');});
+          b.classList.add('on');
+          var ge=document.getElementById('gradual-extra');
+          if(ge) ge.style.display = draft.quitMethod==='gradual' ? 'block' : 'none';
+        };
       });
+      var slider = document.getElementById('grad-slider');
+      if(slider){
+        slider.oninput = function(){
+          draft.gradualReductionPct = +this.value;
+          var pct = document.getElementById('grad-pct');
+          if(pct) pct.textContent = this.value;
+          var basePuffs = +draft.dailyPuffs || 20;
+          var weeks = Math.max(2, Math.ceil(Math.log(1 / basePuffs) / Math.log(1 - (+this.value / 100))));
+          var end = new Date();
+          end.setDate(end.getDate() + weeks * 7);
+          var gd = document.getElementById('grad-date');
+          if(gd) gd.textContent = end.toLocaleDateString('ru-RU');
+          if(draft.quitMethod === 'gradual') draft.quitDate = end.toISOString().split('T')[0];
+        };
+      }
     }
     if (s===4) {
       document.querySelectorAll('._val').forEach(function(b){
@@ -233,10 +288,17 @@ welcome(el, data) {
       draft.name=name;
       draft.dailyPuffs=+document.getElementById('inp-puffs').value||20;
       draft.packPrice=+document.getElementById('inp-cost').value||350;
+      draft.nicotineStrength=+document.getElementById('inp-nic').value||20;
       draft.packSize=+document.getElementById('inp-packsize').value||20;
       draft.dailyCost=Math.round(draft.dailyPuffs*(draft.packPrice/draft.packSize));
     }
-    if(step===3){draft.quitDate=document.getElementById('inp-date').value;}
+    if(step===3){
+      draft.quitDate=document.getElementById('inp-date').value;
+      if(draft.quitMethod==='gradual'){
+        var gs = document.getElementById('inp-grad-start');
+        draft.gradualStartDate = gs ? gs.value : (draft.gradualStartDate || new Date().toISOString().split('T')[0]);
+      }
+    }
     if(step===4&&(!draft.values||draft.values.length===0)){Toast.show('Выбери хотя бы одну ценность','warn');return;}
     render(s);
   };
@@ -467,7 +529,7 @@ exercise(el, data, exId) {
     body = '<div class="card" style="margin-bottom:20px;text-align:center">'
       + ex.content.split('\n').map(function(p){return p?'<p style="margin-bottom:10px;font-size:15px;line-height:1.6;color:var(--text)">'+p+'</p>':'<br>';}).join('')
       + '<div id="timer-disp" style="font-size:48px;font-weight:800;color:var(--blue);margin:20px 0">'+Math.floor(dur/60)+':'+String(dur%60).padStart(2,'0')+'</div>'
-      + '<button class="btn-primary" id="timer-btn" onclick="window._startTimer('+dur+')">▶ Начать таймер</button>'
+      + '<button class="btn-primary" id="timer-btn" onclick="window._startTimer(' + dur + ')">▶ Начать таймер</button>'
       + '</div>';
     window._startTimer = function(secs) {
       var btn = document.getElementById('timer-btn');
@@ -837,7 +899,7 @@ urgeHelp(el, data) {
         + '<p style="color:var(--text2);font-size:15px;margin-top:6px">Что ты сейчас чувствуешь?</p></div>'
         + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
         + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','"Мне нужна затяжка"'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
-            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px" onclick="window._uType(\'\'+t[0]+\'\')"><div style="font-size:32px;margin-bottom:8px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px;margin-top:4px">'+t[3]+'</div></div>';
+            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:32px;margin-bottom:8px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px;margin-top:4px">'+t[3]+'</div></div>';
           }).join('')
         + '</div>'
         + '<div style="padding:16px"><button class="btn-secondary" onclick="App.navigate(\'home\')">← Назад</button></div></div>';
@@ -928,8 +990,11 @@ tracker(el, data) {
   var todayLog = logs[todayKey] || {puffs:0,mood:3,cravings:[],note:''};
   var puffs = todayLog.puffs;
   var mood = todayLog.mood || 3;
-  var isPrepPhase = u.quitDate && new Date(u.quitDate) > new Date();
-  var goalPuffs = isPrepPhase ? Math.round(u.dailyPuffs * 0.8) : 0;
+  var isGradual = u.quitMethod === 'gradual';
+  var goalPuffs = isGradual ? Storage.getGradualGoalForDate(todayKey, u) : 0;
+  var goalNicotine = isGradual
+    ? Math.max(0, Math.round((+u.nicotineStrength || 0) * (1 - (+u.gradualReductionPct || 20) / 100)))
+    : 0;
   var moodEmojis = ['😢','😔','😐','🙂','😄'];
 
   function render() {
@@ -946,7 +1011,7 @@ tracker(el, data) {
       + '<button class="counter-btn" onclick="window._adj(1)">+</button>'
       + '</div>'
       + (puffs===0?'<div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:12px;color:var(--green);font-weight:700;text-align:center;font-size:15px" id="cday-msg">🎉 Чистый день!</div>':'')
-      + (isPrepPhase&&goalPuffs?'<div class="pbar" style="margin-top:16px"><div class="pbar-fill" style="width:'+Math.min(100,Math.round((1-puffs/goalPuffs)*100))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' стиков</div>':'')
+      + (isGradual&&goalPuffs!==null?'<div class="pbar" style="margin-top:16px"><div class="pbar-fill" style="width:'+Math.max(0,Math.min(100,Math.round(((goalPuffs-puffs)/Math.max(1,goalPuffs))*100)))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' стиков</div><div style="font-size:12px;color:var(--text3);margin-top:4px;text-align:center">Цель недели по крепости: '+goalNicotine+' мг/мл</div>':'')
       + '</div>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">НАСТРОЕНИЕ</div>'
@@ -970,6 +1035,81 @@ tracker(el, data) {
     };
   }
   render();
+},
+
+stats(el, data) {
+  var u = data.user, p = data.progress, logs = data.dailyLogs || {};
+  var days = [];
+  for (var i = 29; i >= 0; i--) {
+    var d = new Date();
+    d.setDate(d.getDate() - i);
+    var key = d.toISOString().split('T')[0];
+    var row = logs[key] || { puffs: null, cravings: [] };
+    days.push({ key: key, puffs: row.puffs, cravings: row.cravings || [] });
+  }
+  var values = days.map(function(x){ return x.puffs===null ? null : +x.puffs; }).filter(function(v){ return v!==null; });
+  var maxPuffs = Math.max(1, ...values, +(u.dailyPuffs || 1));
+  var points = days.map(function(d, idx){
+    var val = d.puffs===null ? 0 : +d.puffs;
+    var x = Math.round((idx / 29) * 300);
+    var y = Math.round(120 - (val / maxPuffs) * 100);
+    return x + ',' + y;
+  }).join(' ');
+  var totalCr = { body:0, emotion:0, thought:0, situation:0 };
+  days.forEach(function(d){ d.cravings.forEach(function(c){ if(totalCr[c.type]!==undefined) totalCr[c.type]++; }); });
+  var totalCrCount = totalCr.body + totalCr.emotion + totalCr.thought + totalCr.situation;
+  var sumPuffs = values.reduce(function(a,b){return a+b;},0);
+  var avgPuffs = values.length ? Math.round(sumPuffs / values.length) : 0;
+  var avgCraving = (function(){
+    var intens = [];
+    days.forEach(function(d){d.cravings.forEach(function(c){if(c.intensity)intens.push(+c.intensity);});});
+    return intens.length ? (Math.round((intens.reduce(function(a,b){return a+b;},0)/intens.length)*10)/10) : 0;
+  })();
+  var totalEx = LEVELS.reduce(function(s,l){return s+l.exercises.length;},0);
+  var current = p.exercisesCompleted.length;
+
+  function pieSlice(startDeg, sizeDeg, color, label, value) {
+    var largeArc = sizeDeg > 180 ? 1 : 0;
+    var r = 56, cx = 64, cy = 64;
+    var sRad = (startDeg - 90) * Math.PI / 180;
+    var eRad = (startDeg + sizeDeg - 90) * Math.PI / 180;
+    var x1 = cx + r * Math.cos(sRad), y1 = cy + r * Math.sin(sRad);
+    var x2 = cx + r * Math.cos(eRad), y2 = cy + r * Math.sin(eRad);
+    return '<path d="M '+cx+' '+cy+' L '+x1+' '+y1+' A '+r+' '+r+' 0 '+largeArc+' 1 '+x2+' '+y2+' Z" fill="'+color+'"></path>'
+      + '<div style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+color+'"></span>'+label+': '+value+'</div>';
+  }
+  var colors = { body:'#4CAF82', emotion:'#5B8DEF', thought:'#8B6FC0', situation:'#F5A623' };
+  var labels = { body:'Тело', emotion:'Эмоции', thought:'Мысли', situation:'Ситуации' };
+  var acc = 0;
+  var piePaths = '';
+  var legends = '';
+  ['body','emotion','thought','situation'].forEach(function(k){
+    var pct = totalCrCount ? (totalCr[k]/totalCrCount)*360 : 0;
+    piePaths += pieSlice(acc, pct || 0.001, colors[k], labels[k], totalCr[k]).split('</path>')[0] + '</path>';
+    legends += '<div style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+colors[k]+'"></span>'+labels[k]+': '+totalCr[k]+'</div>';
+    acc += pct;
+  });
+
+  el.innerHTML = '<div class="screen">'
+    + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">📊 Статистика</h2>'
+    + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">Последние 30 дней прогресса</p>'
+    + '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАТЯЖКИ ПО ДНЯМ</div>'
+    + '<svg viewBox="0 0 300 130" style="width:100%;height:130px;background:var(--bg);border-radius:10px"><line x1="0" y1="120" x2="300" y2="120" stroke="#ddd" />'
+    + '<polyline points="'+points+'" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>'
+    + '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text3)"><span>30 дней назад</span><span>Сегодня</span></div></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+    + '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+(p.consecutiveSmokeFree||0)+'</div><div class="stat-label">Серия без вейпа</div></div>'
+    + '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">'+(p.longestStreak||0)+'</div><div class="stat-label">Лучший результат</div></div>'
+    + '<div class="stat-card"><div class="stat-val" style="color:var(--orange)">'+avgPuffs+'</div><div class="stat-label">Среднее / день</div></div>'
+    + '<div class="stat-card"><div class="stat-val" style="color:var(--purple)">'+avgCraving+'</div><div class="stat-label">Ср. тяга (1-10)</div></div>'
+    + '</div>'
+    + '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ТИПЫ ТРИГГЕРОВ</div>'
+    + '<div style="display:flex;align-items:center;gap:14px"><svg viewBox="0 0 128 128" width="128" height="128">'+piePaths+'<circle cx="64" cy="64" r="30" fill="white"></circle><text x="64" y="68" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#666">'+totalCrCount+'</text></svg>'
+    + '<div style="display:flex;flex-direction:column;gap:6px">'+legends+'</div></div></div>'
+    + '<div class="card"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ПРОГРЕСС УРОВНЕЙ</div>'
+    + '<div class="pbar" style="margin-bottom:8px"><div class="pbar-fill" style="width:'+Math.round((current/Math.max(1,totalEx))*100)+'%"></div></div>'
+    + '<div style="font-size:13px;color:var(--text2)">'+(u.currentLevel||1)+' / 8 уровней · '+current+' / '+totalEx+' упражнений</div></div>'
+    + '</div>';
 },
 
 
@@ -1239,6 +1379,7 @@ journal(el, data) {
 
 settings(el, data) {
   var u = data.user;
+  var s = data.settings || { notifications: false, reminderTime: '20:00' };
   el.innerHTML = '<div class="screen">'
     + '<button onclick="App.back()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
     + '<h2 style="font-size:22px;font-weight:800;margin-bottom:20px">⚙️ Настройки</h2>'
@@ -1246,26 +1387,70 @@ settings(el, data) {
     + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">ПРОФИЛЬ</div>'
     + '<div class="input-group"><label class="input-label">ИМЯ</label><input class="input" id="s-name" value="'+(u.name||'')+'"></div>'
     + '<div class="input-group"><label class="input-label">ДАТА ОТКАЗА</label><input class="input" id="s-date" type="date" value="'+(u.quitDate?u.quitDate.split('T')[0]:'')+'"></div>'
+    + '<div class="input-group"><label class="input-label">МЕТОД</label><select class="input" id="s-method"><option value="cold" '+(u.quitMethod==='cold'?'selected':'')+'>Резкий отказ</option><option value="gradual" '+(u.quitMethod==='gradual'?'selected':'')+'>Постепенное снижение</option></select></div>'
+    + '<div class="input-group"><label class="input-label">СНИЖЕНИЕ В НЕДЕЛЮ (%)</label><input class="input" id="s-grad" type="number" min="10" max="30" step="5" value="'+(u.gradualReductionPct||20)+'"></div>'
+    + '<div class="input-group"><label class="input-label">КРЕПОСТЬ (мг/мл)</label><input class="input" id="s-nic" type="number" min="0" max="50" value="'+(u.nicotineStrength||20)+'"></div>'
     + '<div class="input-group"><label class="input-label">ЦЕНА ПАЧКИ (₽)</label><input class="input" id="s-cost" type="number" value="'+(u.packPrice||u.dailyCost||350)+'"></div>'
     + '<div class="input-group"><label class="input-label">СТИКОВ В ПАЧКЕ</label><input class="input" id="s-packsize" type="number" value="'+(u.packSize||20)+'"></div>'
     + '<div class="input-group" style="margin:0"><label class="input-label">СТИКОВ/ДЕНЬ</label><input class="input" id="s-puffs" type="number" value="'+(u.dailyPuffs||20)+'"></div>'
     + '</div>'
+    + '<div class="card" style="margin-bottom:12px">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">УВЕДОМЛЕНИЯ</div>'
+    + '<label style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span>Ежедневное напоминание</span><input type="checkbox" id="s-notif" '+(s.notifications?'checked':'')+'></label>'
+    + '<div class="input-group" style="margin:0"><label class="input-label">ВРЕМЯ</label><input class="input" id="s-rtime" type="time" value="'+(s.reminderTime||'20:00')+'"></div>'
+    + '<div style="font-size:12px;color:var(--text3);margin-top:8px">Работает, когда приложение открывается в течение дня (iOS PWA имеет ограничения).</div>'
+    + '</div>'
     + '<button class="btn-primary" style="margin-bottom:10px" onclick="window._saveSettings()">💾 Сохранить</button>'
+    + '<button class="btn-secondary" style="margin-bottom:10px" onclick="window._exportData()">⬇️ Экспорт данных (JSON)</button>'
+    + '<button class="btn-secondary" style="margin-bottom:10px" onclick="App.navigate(\'achievements\')">🏆 Достижения</button>'
     + '<button class="btn-danger" onclick="window._resetApp()">⟲ Сбросить все данные</button>'
     + '</div>';
   window._saveSettings=function(){
     var packP=+document.getElementById('s-cost').value||(u.packPrice||350);
     var packSz=+document.getElementById('s-packsize').value||(u.packSize||20);
     var sticks=+document.getElementById('s-puffs').value||(u.dailyPuffs||20);
+    var quitMethod=document.getElementById('s-method').value;
+    var gradualPct=Math.min(30,Math.max(10,+document.getElementById('s-grad').value||20));
+    var notifEnabled=!!document.getElementById('s-notif').checked;
+    var reminderTime=document.getElementById('s-rtime').value||'20:00';
     Storage.updateUser({
       name:document.getElementById('s-name').value||u.name,
       quitDate:document.getElementById('s-date').value||u.quitDate,
+      quitMethod: quitMethod,
+      gradualReductionPct: gradualPct,
+      nicotineStrength: +document.getElementById('s-nic').value || (u.nicotineStrength||20),
       packPrice:packP,
       packSize:packSz,
       dailyPuffs:sticks,
       dailyCost:Math.round(sticks*(packP/packSz))
     });
+    var fresh=Storage.get()||Storage.init();
+    fresh.settings = Object.assign({}, fresh.settings, { notifications:notifEnabled, reminderTime:reminderTime });
+    Storage.save(fresh);
+    if(notifEnabled && 'Notification' in window){
+      Notification.requestPermission().then(function(state){
+        if(state==='granted'){
+          maybeSendDailyReminder(true);
+          Toast.show('🔔 Напоминания включены', 'success');
+        } else {
+          Toast.show('Разрешение на уведомления не выдано', 'warn');
+        }
+      });
+    }
     Toast.show('✅ Сохранено','success');
+  };
+  window._exportData=function(){
+    var payload = Storage.get() || {};
+    var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'breathe-freely-export-' + today() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    Toast.show('⬇️ Файл экспортирован', 'success');
   };
   window._resetApp=function(){
     if(confirm('Сбросить все данные? Это действие нельзя отменить.')){
@@ -1274,4 +1459,3 @@ settings(el, data) {
   };
 }
 }; // end Screens
-
