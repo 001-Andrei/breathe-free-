@@ -24,6 +24,7 @@ const Storage = {
         gradualReductionPct: 20,
         gradualStartDate: null,
         dailyPuffs: 20, packPrice: 6.50, packSize: 20, dailyCost: 6.50,
+        savingsGoals: null,
         values: [], currentLevel: 1, setupComplete: false
       },
       progress: {
@@ -160,13 +161,14 @@ const Storage = {
         }
       });
     }
-    // Money saved
+    // Money saved — consistent formula: days since quit × daily cost
     const u = d.user;
     if (u.quitDate && u.dailyPuffs) {
       const sticksSaved = Object.values(logs).reduce((s, l) => s + Math.max(0, u.dailyPuffs - l.puffs), 0);
       d.progress.totalPuffsAvoided = sticksSaved;
-      const costPerStick = (u.packPrice || u.dailyCost || 6.50) / (u.packSize || 20);
-      d.progress.moneySaved = Math.round(sticksSaved * costPerStick);
+      const qd = new Date(u.quitDate);
+      const daysSince = Math.max(0, Math.floor((Date.now() - qd) / 86400000));
+      d.progress.moneySaved = Math.round(daysSince * (u.dailyCost || 6.50) * 100) / 100;
     }
   },
 
