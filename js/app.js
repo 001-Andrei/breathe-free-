@@ -161,6 +161,14 @@ function confetti(elId) {
 
 document.addEventListener('DOMContentLoaded', function() { App.init(); });
 
+// ═══ NAV BAR HELPER ═══
+function navBar(title, backAction, rightHtml) {
+  var back = backAction
+    ? '<button class="nav-back" onclick="' + backAction + '">' + '</button>'
+    : '<div class="nav-placeholder"></div>';
+  var right = rightHtml || '<div class="nav-placeholder"></div>';
+  return '<div class="nav-bar"><div class="nav-title">' + title + '</div>' + back + right + '</div>';
+}
 
 // ═══ SCREENS ═══
 const Screens = {
@@ -367,56 +375,66 @@ home(el, data) {
   var healthNext = HEALTH.find(function(h){ return daysSinceQuit*1440 < h.mins; });
 
   el.innerHTML = '<div class="screen">'
-    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'
-    + '<div><div style="font-size:13px;color:var(--text2);font-weight:600">ПРИВЕТ, ' + (u.name||'ДРУГ').toUpperCase() + '</div>'
-    + '<div style="font-size:22px;font-weight:800;margin-top:2px">'
-    + (isPrepPhase ? 'До дня X: ' + daysToQuit + ' ' + (daysToQuit===1?'день':daysToQuit<5?'дня':'дней')
-      : daysSinceQuit===0 ? 'Сегодня — день отказа!'
-      : 'День ' + daysSinceQuit + ' без стиков') + '</div></div>'
-    + '<div style="text-align:right"><div style="font-size:12px;color:var(--text2)">Уровень ' + lvlNum + '/8</div>'
-    + '<div style="font-size:12px;color:var(--green);font-weight:700">🔥 Серия: ' + streak + ' ' + (streak===1?'день':streak<5?'дня':'дней') + '</div></div>'
+    // ── Hero ──
+    + '<div class="hero-card">'
+    + '<div style="font-size:12px;color:rgba(28,28,30,.55);font-weight:600;letter-spacing:.5px;margin-bottom:4px">ПРИВЕТ, ' + (u.name||'ДРУГ').toUpperCase() + '</div>'
+    + '<div style="font-size:26px;font-weight:700;line-height:1.2;margin-bottom:14px;letter-spacing:-.3px">'
+    + (isPrepPhase
+        ? '⏳ До дня X: <b>' + daysToQuit + '</b> ' + (daysToQuit===1?'день':daysToQuit<5?'дня':'дней')
+        : daysSinceQuit===0
+          ? '🌅 Сегодня — день отказа!'
+          : '🌿 День <b>' + daysSinceQuit + '</b> без стиков')
     + '</div>'
-    // Progress ring
-    + '<div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,#F0FFF8,#EBF4FF)">'
+    // mini progress ring + streak
     + '<div style="display:flex;align-items:center;gap:16px">'
-    + '<div style="position:relative;width:64px;height:64px;flex-shrink:0">'
-    + '<svg width="64" height="64" viewBox="0 0 64 64" style="transform:rotate(-90deg)">'
-    + '<circle cx="32" cy="32" r="26" fill="none" stroke="#E5E5EA" stroke-width="6"/>'
-    + '<circle cx="32" cy="32" r="26" fill="none" stroke="#4CAF82" stroke-width="6" stroke-linecap="round"'
-    + ' stroke-dasharray="163" stroke-dashoffset="' + Math.round(163*(1-overallProg/100)) + '"/>'
-    + '</svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--green)">' + overallProg + '%</div>'
-    + '</div><div>'
-    + '<div style="font-weight:700;font-size:15px">Прогресс программы</div>'
-    + '<div style="color:var(--text2);font-size:13px;margin-top:2px">' + p.exercisesCompleted.length + ' упражнений выполнено</div>'
-    + '</div></div></div>'
-    // Quick actions
-    + '<button class="btn-sos" onclick="App.navigate(\'urge-help\')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
-    + '<div style="font-size:20px;margin-bottom:4px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
-    + '<div style="font-weight:700;font-size:14px">Уровень ' + lvlNum + '</div>'
-    + '<div style="color:var(--text2);font-size:12px">' + doneCount + '/' + totalEx + ' упр.</div>'
-    + '<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:' + Math.round(doneCount/totalEx*100) + '%"></div></div>'
-    + '</button>'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer" onclick="App.navigate(\'tracker\')">'
-    + '<div style="font-size:20px;margin-bottom:4px">📊</div>'
-    + '<div style="font-weight:700;font-size:14px">Трекер</div>'
-    + '<div style="color:var(--text2);font-size:12px">Сегодня: ' + todayLog.puffs + ' стиков</div>'
-    + '</button></div>'
-    // Stats
-    + '<div class="stats-grid" style="margin-bottom:12px">'
-    + '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'
-    + (p.moneySaved||0).toLocaleString() + ' ₽</div><div class="stat-label">Сэкономлено</div></div>'
-    + '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">'
-    + (p.totalPuffsAvoided||0).toLocaleString() + '</div><div class="stat-label">Стиков не выкурено</div></div>'
-    + '<div class="stat-card"><div class="stat-val" style="color:var(--orange)">' + p.achievements.length + '/' + ACHIEVEMENTS.length + '</div><div class="stat-label">Достижений</div></div>'
-    + '<div class="stat-card"><div class="stat-val" style="color:var(--purple)">'
-    + (healthNext ? fmtMins(healthNext.mins - daysSinceQuit*1440) + ' → веха' : '✓ год!')
-    + '</div><div class="stat-label">До вехи здоровья</div></div>'
+    + '<div style="position:relative;width:60px;height:60px;flex-shrink:0">'
+    + '<svg width="60" height="60" viewBox="0 0 60 60" style="transform:rotate(-90deg)">'
+    + '<circle cx="30" cy="30" r="24" fill="none" stroke="rgba(0,0,0,.10)" stroke-width="5"/>'
+    + '<circle cx="30" cy="30" r="24" fill="none" stroke="url(#pg)" stroke-width="5" stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="' + Math.round(151*(1-overallProg/100)) + '">'
+    + '</circle>'
+    + '<defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#2AABEE"/><stop offset="100%" stop-color="#7B61FF"/></linearGradient></defs>'
+    + '</svg>'
+    + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent)">' + overallProg + '%</div>'
     + '</div>'
-    // Quote
-    + '<div class="card" style="background:var(--green-light);border-color:rgba(76,175,130,.2)">'
-    + '<div style="font-size:14px;color:var(--green);line-height:1.5;text-align:center;font-style:italic">«'
+    + '<div style="flex:1">'
+    + '<div style="font-size:14px;font-weight:600">Прогресс программы</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-top:2px">Уровень ' + lvlNum + '/8 · ' + p.exercisesCompleted.length + ' упр. выполнено</div>'
+    + '<div style="font-size:13px;color:var(--green);font-weight:600;margin-top:5px">🔥 Серия: ' + streak + ' ' + (streak===1?'день':streak<5?'дня':'дней') + '</div>'
+    + '</div></div></div>'
+    // ── SOS ──
+    + '<button class="btn-sos" onclick="App.navigate(\'urge-help\')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
+    // ── Quick links ──
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
+    + '<div style="font-size:22px;margin-bottom:6px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
+    + '<div style="font-weight:700;font-size:14px;margin-bottom:2px">Уровень ' + lvlNum + '</div>'
+    + '<div style="color:var(--text2);font-size:12px;margin-bottom:8px">' + doneCount + '/' + totalEx + ' упр.</div>'
+    + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.round(doneCount/totalEx*100) + '%"></div></div>'
+    + '</button>'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%" onclick="App.navigate(\'tracker\')">'
+    + '<div style="font-size:22px;margin-bottom:6px">📊</div>'
+    + '<div style="font-weight:700;font-size:14px;margin-bottom:2px">Трекер дня</div>'
+    + '<div style="color:var(--text2);font-size:12px">Сегодня: <b style="color:var(--text)">' + todayLog.puffs + '</b> стиков</div>'
+    + '</button></div>'
+    // ── Stats (кликабельные) ──
+    + '<div class="stats-grid" style="margin-bottom:10px">'
+    + '<div class="stat-card" onclick="App.navigate(\'savings\')">'
+    + '<div class="stat-val" style="color:var(--green)">' + (p.moneySaved||0).toLocaleString() + ' ₽</div>'
+    + '<div class="stat-label">Сэкономлено →</div></div>'
+    + '<div class="stat-card">'
+    + '<div class="stat-val" style="color:var(--accent)">' + (p.totalPuffsAvoided||0).toLocaleString() + '</div>'
+    + '<div class="stat-label">Стиков не выкурено</div></div>'
+    + '<div class="stat-card" onclick="App.navigate(\'achievements\')">'
+    + '<div class="stat-val" style="color:var(--orange)">' + p.achievements.length + '/' + ACHIEVEMENTS.length + '</div>'
+    + '<div class="stat-label">Достижений →</div></div>'
+    + '<div class="stat-card" onclick="App.navigate(\'health\')">'
+    + '<div class="stat-val" style="color:var(--purple);font-size:16px">'
+    + (healthNext ? fmtMins(healthNext.mins - daysSinceQuit*1440) : '✓ год!') + '</div>'
+    + '<div class="stat-label">До вехи здоровья →</div></div>'
+    + '</div>'
+    // ── Quote ──
+    + '<div class="card" style="background:var(--green-light);border-color:rgba(34,197,94,.25)">'
+    + '<div style="font-size:14px;color:var(--green);line-height:1.6;text-align:center;font-style:italic">«'
     + QUOTES[Math.floor(Date.now()/600000) % QUOTES.length] + '»</div></div>'
     + '</div>';
 },
@@ -1034,7 +1052,6 @@ tracker(el, data) {
   function render() {
     var col = puffs===0?'var(--green)':puffs<=u.dailyPuffs*.5?'var(--blue)':puffs<=u.dailyPuffs?'var(--orange)':'var(--red)';
     el.innerHTML = '<div class="screen">'
-      + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Трекер дня</h2>'
       + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">' + new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'}) + '</p>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">СТИКОВ СЕГОДНЯ</div>'
@@ -1209,7 +1226,6 @@ health(el, data) {
   var now = new Date();
   var minsSinceQuit = quitDate ? Math.max(0,Math.floor((now-quitDate)/60000)) : 0;
   el.innerHTML = '<div class="screen">'
-    + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">🫁 Здоровье</h2>'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Что происходит в твоём теле</p>'
     + (!u.quitDate?'<div class="card" style="background:var(--orange-light);border-color:rgba(245,166,35,.2);margin-bottom:16px;color:var(--orange)">Установи дату отказа в настройках чтобы видеть прогресс</div>':'')
     + HEALTH.map(function(h){
@@ -1236,7 +1252,6 @@ savings(el, data) {
   var daysSince = quitDate ? Math.max(0,Math.floor((now-quitDate)/86400000)) : 0;
   var saved = Math.round(daysSince * (u.dailyCost||200));
   el.innerHTML = '<div class="screen">'
-    + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">💰 Экономия</h2>'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Деньги, которые остались с тобой</p>'
     + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,#F0FFF8,#FFF9F0)">'
     + '<div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px">УЖЕ СЭКОНОМЛЕНО</div>'
@@ -1269,7 +1284,6 @@ achievements(el, data) {
   var p = data.progress;
   var cats = [{id:'level',name:'Уровни программы'},{id:'streak',name:'Серия дней'},{id:'practice',name:'Практика'}];
   el.innerHTML = '<div class="screen">'
-    + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">🏆 Достижения</h2>'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">'+p.achievements.length+' из '+ACHIEVEMENTS.length+'</p>'
     + '<div class="pbar" style="margin-bottom:24px"><div class="pbar-fill" style="width:'+Math.round((p.achievements.length/ACHIEVEMENTS.length)*100)+'%"></div></div>'
     + cats.map(function(cat){
