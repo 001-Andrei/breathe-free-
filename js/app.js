@@ -1267,19 +1267,43 @@ health(el, data) {
 
 savings(el, data) {
   var u = data.user;
-  var quitDate = u.quitDate ? new Date(u.quitDate) : null;
-  var now = new Date();
-  var daysSince = quitDate ? Math.max(0,Math.floor((now-quitDate)/86400000)) : 0;
-  var saved = Math.round(daysSince * (u.dailyCost||6.50) * 100) / 100;
-  el.innerHTML = '<div class="screen">'
-    + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Деньги, которые остались с тобой</p>'
-    + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,rgba(42,171,238,.12),rgba(123,97,255,.10))">'
-    + '<div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px">УЖЕ СЭКОНОМЛЕНО</div>'
-    + '<div style="font-size:48px;font-weight:900;color:var(--green)">€' + saved.toFixed(saved < 10 ? 2 : 0) + '</div>'
-    + '<div style="color:var(--text2);font-size:14px;margin-top:4px">за ' + fmtDays(daysSince) + '</div>'
-    + '</div>'
-    + '<div style="font-size:15px;font-weight:700;margin-bottom:12px">На что это можно потратить:</div>'
-    + SAVINGS_GOALS.map(function(g){
+  var p = data.progress;
+  var goals = JSON.parse(JSON.stringify(u.savingsGoals || SAVINGS_GOALS));
+  var editMode = false;
+
+  function saveEdits() {
+    goals = goals.map(function(g, i) {
+      var eEl=document.getElementById('sg-e-'+i);
+      var nEl=document.getElementById('sg-n-'+i);
+      var pEl=document.getElementById('sg-p-'+i);
+      return {
+        emoji: (eEl&&eEl.value.trim()) || g.emoji,
+        name:  (nEl&&nEl.value.trim()) || g.name,
+        price: (pEl&&+pEl.value>0) ? +pEl.value : g.price
+      };
+    });
+  }
+
+  function renderList(saved) {
+    if (editMode) {
+      return goals.map(function(g, i) {
+          return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">'
+            + '<input class="input" id="sg-e-'+i+'" value="'+g.emoji+'" style="width:46px;text-align:center;padding:8px 2px;font-size:18px">'
+            + '<input class="input" id="sg-n-'+i+'" value="'+g.name+'" style="flex:1">'
+            + '<input class="input" id="sg-p-'+i+'" type="number" min="1" value="'+g.price+'" style="width:66px">'
+            + '<button onclick="window._sgDel('+i+')" style="color:var(--red);padding:6px 10px;font-size:22px;flex-shrink:0;line-height:1">×</button>'
+            + '</div>';
+        }).join('')
+        + '<div style="display:flex;align-items:center;gap:6px;margin:12px 0 16px;padding-top:12px;border-top:1px solid rgba(0,0,0,.07)">'
+        + '<input class="input" id="sg-ne" placeholder="🎯" style="width:46px;text-align:center;padding:8px 2px;font-size:18px">'
+        + '<input class="input" id="sg-nn" placeholder="Новая цель" style="flex:1">'
+        + '<input class="input" id="sg-np" type="number" min="1" placeholder="€" style="width:66px">'
+        + '<button onclick="window._sgAdd()" style="color:var(--accent);padding:6px 10px;font-size:26px;flex-shrink:0;font-weight:300;line-height:1">+</button>'
+        + '</div>'
+        + '<button class="btn-primary" style="margin-bottom:8px" onclick="window._sgSave()">Сохранить</button>'
+        + '<button class="btn-secondary" onclick="window._sgCancel()">Отмена</button>';
+    }
+    return goals.map(function(g) {
         var pct = Math.min(100,Math.round((saved/g.price)*100));
         return '<div class="card card-sm" style="margin-bottom:10px">'
           + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'
@@ -1289,15 +1313,55 @@ savings(el, data) {
           + '</div>'
           + '<div class="pbar"><div class="pbar-fill" style="width:'+pct+'%;background:'+(pct>=100?'linear-gradient(90deg,var(--green),#3DA870)':'linear-gradient(90deg,var(--blue),#4B8EEF)')+'"></div></div>'
           + '</div>';
-      }).join('')
-    + '<div class="card" style="margin-top:8px">'
-    + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ПРОЕКЦИЯ</div>'
-    + [['1 месяц',30],['3 месяца',90],['1 год',365]].map(function(p){
-        return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">'
-          + '<span style="color:var(--text2)">'+p[0]+'</span>'
-          + '<span style="font-weight:700;color:var(--green)">€'+Math.round(p[1]*(u.dailyCost||6.50))+'</span></div>';
-      }).join('')
-    + '</div></div>';
+      }).join('');
+  }
+
+  function render() {
+    var saved = +(p.moneySaved || 0);
+    var quitDate = u.quitDate ? new Date(u.quitDate) : null;
+    var daysSince = quitDate ? Math.max(0,Math.floor((new Date()-quitDate)/86400000)) : 0;
+    el.innerHTML = '<div class="screen">'
+      + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Деньги, которые остались с тобой</p>'
+      + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,rgba(42,171,238,.12),rgba(123,97,255,.10))">'
+      + '<div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px">УЖЕ СЭКОНОМЛЕНО</div>'
+      + '<div style="font-size:48px;font-weight:900;color:var(--green)">€'+(saved<10?saved.toFixed(2):Math.round(saved))+'</div>'
+      + '<div style="color:var(--text2);font-size:14px;margin-top:4px">за '+fmtDays(daysSince)+'</div>'
+      + '</div>'
+      + '<div style="font-size:15px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">'
+      + '<span>На что это можно потратить:</span>'
+      + (editMode ? '' : '<button onclick="window._sgEdit()" style="color:var(--accent);font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:var(--accent-light)">✏️ Изменить</button>')
+      + '</div>'
+      + '<div class="card" style="margin-bottom:10px">' + renderList(saved) + '</div>'
+      + '<div class="card" style="margin-top:8px">'
+      + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ПРОЕКЦИЯ</div>'
+      + [['1 месяц',30],['3 месяца',90],['1 год',365]].map(function(pr){
+          return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">'
+            + '<span style="color:var(--text2)">'+pr[0]+'</span>'
+            + '<span style="font-weight:700;color:var(--green)">€'+Math.round(pr[1]*(u.dailyCost||6.50))+'</span></div>';
+        }).join('')
+      + '</div></div>';
+
+    window._sgEdit   = function() { editMode=true; render(); };
+    window._sgCancel = function() { goals=JSON.parse(JSON.stringify(u.savingsGoals||SAVINGS_GOALS)); editMode=false; render(); };
+    window._sgDel    = function(i) { saveEdits(); goals.splice(i,1); render(); };
+    window._sgAdd    = function() {
+      saveEdits();
+      var e=document.getElementById('sg-ne').value.trim()||'⭐';
+      var n=document.getElementById('sg-nn').value.trim();
+      var pr=+document.getElementById('sg-np').value;
+      if(n&&pr>0){ goals.push({emoji:e,name:n,price:pr}); render(); }
+      else Toast.show('Введи название и цену','warn');
+    };
+    window._sgSave   = function() {
+      saveEdits();
+      goals.sort(function(a,b){return a.price-b.price;});
+      Storage.updateUser({savingsGoals:goals});
+      var fresh=Storage.get(); if(fresh){u=fresh.user; p=fresh.progress;}
+      editMode=false; render();
+      Toast.show('✅ Сохранено','success');
+    };
+  }
+  render();
 },
 
 achievements(el, data) {
