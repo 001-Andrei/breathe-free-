@@ -211,10 +211,8 @@ welcome(el, data) {
       + '</div></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
       + '<div><label class="input-label">СТИКОВ/ДЕНЬ</label><input class="input" id="inp-puffs" type="number" inputmode="numeric" value="'+(draft.dailyPuffs||20)+'"></div>'
-      + '<div><label class="input-label">ЦЕНА ПАЧКИ (₽)</label><input class="input" id="inp-cost" type="number" inputmode="numeric" value="'+(draft.packPrice||350)+'"></div>'
+      + '<div><label class="input-label">ЦЕНА ПАЧКИ (€)</label><input class="input" id="inp-cost" type="number" inputmode="decimal" step="0.01" min="0" value="'+(draft.packPrice||6.50)+'"></div>'
       + '</div>'
-      + '<div class="input-group"><label class="input-label">КРЕПОСТЬ НИКОТИНА (мг/мл)</label>'
-      + '<input class="input" id="inp-nic" type="number" min="0" max="50" inputmode="decimal" value="'+(draft.nicotineStrength||20)+'"></div>'
       + '<div class="input-group" style="margin-bottom:16px"><label class="input-label">СТИКОВ В ПАЧКЕ</label>'
       + '<input class="input" id="inp-packsize" type="number" inputmode="numeric" value="'+(draft.packSize||20)+'"></div>'
       + '<button class="btn-primary" onclick="window._ws(2)">Продолжить →</button>';
@@ -254,8 +252,8 @@ welcome(el, data) {
       + (draft.quitMethod==='gradual'
         ? '<div class="input-group"><label class="input-label">ДАТА НАЧАЛА СНИЖЕНИЯ</label><input class="input" id="inp-grad-start" type="date" value="'+((draft.gradualStartDate||minStr).split('T')[0])+'" min="'+minStr+'"></div>'
         : '')
-      + '<div class="card" style="background:var(--green-light);border-color:rgba(76,175,130,.2);margin-bottom:24px">'
-      + '<div style="color:var(--green);font-size:14px">💡 Рекомендуем через 7 дней — используй время для прохождения уровней 1–4.</div></div>'
+      + '<div class="card" style="background:var(--green-light);border-color:rgba(34,197,94,.25);margin-bottom:24px">'
+      + '<div style="color:#166534;font-size:14px">💡 Рекомендуем через 7 дней — используй время для прохождения уровней 1–4.</div></div>'
       + '<button class="btn-primary" onclick="window._ws(4)">Продолжить →</button>';
   }
   function s4() {
@@ -332,10 +330,9 @@ welcome(el, data) {
       if(!name){Toast.show('Введи своё имя','warn');return;}
       draft.name=name;
       draft.dailyPuffs=+document.getElementById('inp-puffs').value||20;
-      draft.packPrice=+document.getElementById('inp-cost').value||350;
-      draft.nicotineStrength=+document.getElementById('inp-nic').value||20;
+      draft.packPrice=+document.getElementById('inp-cost').value||6.50;
       draft.packSize=+document.getElementById('inp-packsize').value||20;
-      draft.dailyCost=Math.round(draft.dailyPuffs*(draft.packPrice/draft.packSize));
+      draft.dailyCost=Math.round(draft.dailyPuffs*(draft.packPrice/draft.packSize)*100)/100;
     }
     if(step===3){
       draft.quitDate=document.getElementById('inp-date').value;
@@ -404,22 +401,23 @@ home(el, data) {
     // ── SOS ──
     + '<button class="btn-sos" onclick="App.navigate(\'urge-help\')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
     // ── Quick links ──
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;align-items:stretch">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%;display:flex;flex-direction:column" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
     + '<div style="font-size:22px;margin-bottom:6px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
     + '<div style="font-weight:700;font-size:14px;margin-bottom:2px">Уровень ' + lvlNum + '</div>'
-    + '<div style="color:var(--text2);font-size:12px;margin-bottom:8px">' + doneCount + '/' + totalEx + ' упр.</div>'
+    + '<div style="color:var(--text2);font-size:12px;margin-bottom:auto;padding-bottom:8px">' + doneCount + '/' + totalEx + ' упр.</div>'
     + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.round(doneCount/totalEx*100) + '%"></div></div>'
     + '</button>'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%" onclick="App.navigate(\'tracker\')">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%;display:flex;flex-direction:column" onclick="App.navigate(\'tracker\')">'
     + '<div style="font-size:22px;margin-bottom:6px">📊</div>'
     + '<div style="font-weight:700;font-size:14px;margin-bottom:2px">Трекер дня</div>'
-    + '<div style="color:var(--text2);font-size:12px">Сегодня: <b style="color:var(--text)">' + todayLog.puffs + '</b> стиков</div>'
+    + '<div style="color:var(--text2);font-size:12px;margin-bottom:auto;padding-bottom:8px">Сегодня: <b style="color:var(--text)">' + todayLog.puffs + '</b> стиков</div>'
+    + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.min(100, Math.round((todayLog.puffs / Math.max(1,u.dailyPuffs||20)) * 100)) + '%;background:' + (todayLog.puffs===0 ? 'linear-gradient(90deg,var(--green),#3DA870)' : 'linear-gradient(90deg,var(--blue),#4B8EEF)') + '"></div></div>'
     + '</button></div>'
     // ── Stats (кликабельные) ──
     + '<div class="stats-grid" style="margin-bottom:10px">'
     + '<div class="stat-card" onclick="App.navigate(\'savings\')">'
-    + '<div class="stat-val" style="color:var(--green)">' + (p.moneySaved||0).toLocaleString() + ' ₽</div>'
+    + '<div class="stat-val" style="color:var(--green)">€' + (p.moneySaved||0).toFixed(0) + '</div>'
     + '<div class="stat-label">Сэкономлено →</div></div>'
     + '<div class="stat-card">'
     + '<div class="stat-val" style="color:var(--accent)">' + (p.totalPuffsAvoided||0).toLocaleString() + '</div>'
@@ -434,7 +432,7 @@ home(el, data) {
     + '</div>'
     // ── Quote ──
     + '<div class="card" style="background:var(--green-light);border-color:rgba(34,197,94,.25)">'
-    + '<div style="font-size:14px;color:var(--green);line-height:1.6;text-align:center;font-style:italic">«'
+    + '<div style="font-size:14px;color:#166534;line-height:1.6;text-align:center;font-style:italic">«'
     + QUOTES[Math.floor(Date.now()/600000) % QUOTES.length] + '»</div></div>'
     + '</div>';
 },
@@ -892,7 +890,7 @@ exercise(el, data, exId) {
       +'<div><div style="font-size:36px;font-weight:900;color:var(--green)">'+ds+'</div><div style="color:var(--text2);font-size:12px">чистых дней</div></div>'
       +'<div><div style="font-size:36px;font-weight:900;color:var(--blue)">'+pr.exercisesCompleted.length+'</div><div style="color:var(--text2);font-size:12px">упражнений</div></div>'
       +'<div><div style="font-size:36px;font-weight:900;color:var(--orange)">'+pr.achievements.length+'</div><div style="color:var(--text2);font-size:12px">достижений</div></div>'
-      +'<div><div style="font-size:28px;font-weight:900;color:var(--purple)">₽'+(pr.moneySaved||0).toLocaleString()+'</div><div style="color:var(--text2);font-size:12px">сэкономлено</div></div>'
+      +'<div><div style="font-size:28px;font-weight:900;color:var(--purple)">€'+(pr.moneySaved||0).toFixed(0)+'</div><div style="color:var(--text2);font-size:12px">сэкономлено</div></div>'
       +'</div>'
       +'<div class="pbar" style="margin-bottom:6px"><div class="pbar-fill" style="width:'+Math.round(pr.exercisesCompleted.length/totalExAll*100)+'%"></div></div>'
       +'<div style="font-size:12px;color:var(--text2)">'+pr.exercisesCompleted.length+' из '+totalExAll+' упражнений программы</div>'
@@ -951,7 +949,7 @@ urgeHelp(el, data) {
         + '<p style="color:var(--text2);font-size:15px;margin-top:6px">Что ты сейчас чувствуешь?</p></div>'
         + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
         + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','"Мне нужна затяжка"'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
-            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:32px;margin-bottom:8px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px;margin-top:4px">'+t[3]+'</div></div>';
+            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:32px;margin-bottom:8px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px;margin-top:4px">'+t[3]+'</div></div>';
           }).join('')
         + '</div>'
         + '<div style="padding:16px"><button class="btn-secondary" onclick="App.navigate(\'home\')">← Назад</button></div></div>';
@@ -995,7 +993,7 @@ urgeHelp(el, data) {
       };
       el.innerHTML = '<div class="screen"><button onclick="window._uBack2()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← К упражнениям</button>'
         + '<div class="card" style="margin-bottom:20px">' + (bodies[window._sosTx]||bodies.plan) + '</div>'
-        + '<button class="btn-primary" onclick="render(3)">Оценить тягу (шаг 3 из 4) →</button></div>';
+        + '<button class="btn-primary" onclick="render(3)">Записать результат →</button></div>';
       window._uBack2=function(){render(1);};
       window._startSosWave=function(){var d=document.getElementById('wt'),b=document.getElementById('wbtn');if(!d||!b)return;b.disabled=true;b.textContent='Идёт...';var r=300,iv=setInterval(function(){r--;if(d)d.textContent=Math.floor(r/60)+':'+String(r%60).padStart(2,'0');if(r<=0){clearInterval(iv);render(3);}},1000);};
       window._sosLeaf=function(){var i=document.getElementById('lf-inp'),o=document.getElementById('lf-out');if(i&&i.value.trim()&&o){o.textContent='🍃 «'+i.value+'» — отпущено';i.value='';}};
@@ -1006,13 +1004,15 @@ urgeHelp(el, data) {
       },100);
     }
     if(s===3) {
-      el.innerHTML = '<div class="screen"><h2 style="font-size:22px;font-weight:800;margin-bottom:16px">Как тяга сейчас?</h2>'
+      el.innerHTML = '<div class="screen"><h2 style="font-size:22px;font-weight:800;margin-bottom:6px">Как тяга сейчас?</h2>'
+        + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">Оцени и сохрани в дневник</p>'
         + '<div class="card" style="margin-bottom:20px">'
-        + '<label class="input-label">ИНТЕНСИВНОСТЬ: <span id="ints">5</span>/10</label>'
+        + '<label class="input-label">ИНТЕНСИВНОСТЬ ТЯГИ: <span id="ints">5</span>/10</label>'
         + '<input type="range" min="1" max="10" value="5" oninput="document.getElementById(&quot;ints&quot;).textContent=this.value;window._sosInt=+this.value" style="margin-bottom:8px">'
         + '</div>'
-        + '<button class="btn-primary" style="margin-bottom:10px" onclick="window._sosWin(true)">💪 Я остаюсь свободным</button>'
-        + '<button class="btn-danger" onclick="window._sosWin(false)">Не справился</button></div>';
+        + '<p style="color:var(--text2);font-size:13px;margin-bottom:10px;text-align:center">Что произошло? Запись сохранится в дневник.</p>'
+        + '<button class="btn-primary" style="margin-bottom:10px" onclick="window._sosWin(true)">💪 Справился — не взял стик</button>'
+        + '<button class="btn-danger" onclick="window._sosWin(false)">Использовал устройство</button></div>';
       window._sosInt=5;
       window._sosWin=function(w){won=w;render(4);};
     }
@@ -1044,9 +1044,6 @@ tracker(el, data) {
   var mood = todayLog.mood || 3;
   var isGradual = u.quitMethod === 'gradual';
   var goalPuffs = isGradual ? Storage.getGradualGoalForDate(todayKey, u) : 0;
-  var goalNicotine = isGradual
-    ? Math.max(0, Math.round((+u.nicotineStrength || 0) * (1 - (+u.gradualReductionPct || 20) / 100)))
-    : 0;
   var moodEmojis = ['😢','😔','😐','🙂','😄'];
 
   function render() {
@@ -1061,8 +1058,8 @@ tracker(el, data) {
       + '<div style="color:var(--text2);font-size:13px;margin-top:4px">'+(u.dailyPuffs?'из '+u.dailyPuffs+' стиков':'стиков')+'</div></div>'
       + '<button class="counter-btn" onclick="window._adj(1)">+</button>'
       + '</div>'
-      + (puffs===0?'<div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:12px;color:var(--green);font-weight:700;text-align:center;font-size:15px" id="cday-msg">🎉 Чистый день!</div>':'')
-      + (isGradual&&goalPuffs!==null?'<div class="pbar" style="margin-top:16px"><div class="pbar-fill" style="width:'+Math.max(0,Math.min(100,Math.round(((goalPuffs-puffs)/Math.max(1,goalPuffs))*100)))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' стиков</div><div style="font-size:12px;color:var(--text3);margin-top:4px;text-align:center">Цель недели по крепости: '+goalNicotine+' мг/мл</div>':'')
+      + (puffs===0?'<div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:12px;color:#166534;font-weight:700;text-align:center;font-size:15px" id="cday-msg">🎉 Чистый день!</div>':'')
+      + (isGradual&&goalPuffs!==null?'<div class="pbar" style="margin-top:16px"><div class="pbar-fill" style="width:'+Math.max(0,Math.min(100,Math.round(((goalPuffs-puffs)/Math.max(1,goalPuffs))*100)))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' стиков</div>':'')
       + '</div>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">НАСТРОЕНИЕ</div>'
@@ -1250,12 +1247,12 @@ savings(el, data) {
   var quitDate = u.quitDate ? new Date(u.quitDate) : null;
   var now = new Date();
   var daysSince = quitDate ? Math.max(0,Math.floor((now-quitDate)/86400000)) : 0;
-  var saved = Math.round(daysSince * (u.dailyCost||200));
+  var saved = Math.round(daysSince * (u.dailyCost||6.50) * 100) / 100;
   el.innerHTML = '<div class="screen">'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Деньги, которые остались с тобой</p>'
-    + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,#F0FFF8,#FFF9F0)">'
+    + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,rgba(42,171,238,.12),rgba(123,97,255,.10))">'
     + '<div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px">УЖЕ СЭКОНОМЛЕНО</div>'
-    + '<div style="font-size:48px;font-weight:900;color:var(--green)">₽' + saved.toLocaleString() + '</div>'
+    + '<div style="font-size:48px;font-weight:900;color:var(--green)">€' + saved.toFixed(saved < 10 ? 2 : 0) + '</div>'
     + '<div style="color:var(--text2);font-size:14px;margin-top:4px">за ' + fmtDays(daysSince) + '</div>'
     + '</div>'
     + '<div style="font-size:15px;font-weight:700;margin-bottom:12px">На что это можно потратить:</div>'
@@ -1264,7 +1261,7 @@ savings(el, data) {
         return '<div class="card card-sm" style="margin-bottom:10px">'
           + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">'
           + '<div style="font-size:24px">'+g.emoji+'</div>'
-          + '<div style="flex:1"><div style="font-weight:600">'+g.name+'</div><div style="color:var(--text2);font-size:13px">₽'+g.price.toLocaleString()+'</div></div>'
+          + '<div style="flex:1"><div style="font-weight:600">'+g.name+'</div><div style="color:var(--text2);font-size:13px">€'+g.price+'</div></div>'
           + '<div style="font-size:14px;font-weight:700;color:'+(pct>=100?'var(--green)':'var(--text3)')+'">'+pct+'%</div>'
           + '</div>'
           + '<div class="pbar"><div class="pbar-fill" style="width:'+pct+'%;background:'+(pct>=100?'linear-gradient(90deg,var(--green),#3DA870)':'linear-gradient(90deg,var(--blue),#4B8EEF)')+'"></div></div>'
@@ -1275,7 +1272,7 @@ savings(el, data) {
     + [['1 месяц',30],['3 месяца',90],['1 год',365]].map(function(p){
         return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">'
           + '<span style="color:var(--text2)">'+p[0]+'</span>'
-          + '<span style="font-weight:700;color:var(--green)">₽'+Math.round(p[1]*(u.dailyCost||200)).toLocaleString()+'</span></div>';
+          + '<span style="font-weight:700;color:var(--green)">€'+Math.round(p[1]*(u.dailyCost||6.50))+'</span></div>';
       }).join('')
     + '</div></div>';
 },
@@ -1365,7 +1362,7 @@ journal(el, data) {
     var valuesContent = '<button class="btn-primary" style="margin-bottom:14px" id="vj-add-btn">+ Записать действие</button>'
       + '<div id="vj-form" style="display:none" class="card" style="margin-bottom:14px">'
       + '<p style="font-size:13px;color:var(--text2);margin-bottom:8px">Что ты сделал(а) сегодня в направлении своих ценностей?</p>'
-      + '<textarea class="input" id="vj-inp" style="height:80px;resize:none;display:block;margin-bottom:8px" placeholder="Например: позвонил маме, пробежал 3 км, отложил 300₽..."></textarea>'
+      + '<textarea class="input" id="vj-inp" style="height:80px;resize:none;display:block;margin-bottom:8px" placeholder="Например: позвонил маме, пробежал 3 км, отложил €5..."></textarea>'
       + '<div style="display:flex;gap:8px">'
       + '<button class="btn-primary" style="flex:1" id="vj-save-btn">Сохранить ✅</button>'
       + '<button style="padding:12px 14px;background:var(--bg);border-radius:10px;color:var(--text2);font-size:14px" id="vj-cancel-btn">✕</button>'
@@ -1437,8 +1434,7 @@ settings(el, data) {
     + '<div class="input-group"><label class="input-label">ДАТА ОТКАЗА</label><input class="input" id="s-date" type="date" value="'+(u.quitDate?u.quitDate.split('T')[0]:'')+'"></div>'
     + '<div class="input-group"><label class="input-label">МЕТОД</label><select class="input" id="s-method"><option value="cold" '+(u.quitMethod==='cold'?'selected':'')+'>Резкий отказ</option><option value="gradual" '+(u.quitMethod==='gradual'?'selected':'')+'>Постепенное снижение</option></select></div>'
     + '<div class="input-group"><label class="input-label">СНИЖЕНИЕ В НЕДЕЛЮ (%)</label><input class="input" id="s-grad" type="number" min="10" max="30" step="5" value="'+(u.gradualReductionPct||20)+'"></div>'
-    + '<div class="input-group"><label class="input-label">КРЕПОСТЬ (мг/мл)</label><input class="input" id="s-nic" type="number" min="0" max="50" value="'+(u.nicotineStrength||20)+'"></div>'
-    + '<div class="input-group"><label class="input-label">ЦЕНА ПАЧКИ (₽)</label><input class="input" id="s-cost" type="number" value="'+(u.packPrice||u.dailyCost||350)+'"></div>'
+    + '<div class="input-group"><label class="input-label">ЦЕНА ПАЧКИ (€)</label><input class="input" id="s-cost" type="number" step="0.01" min="0" value="'+(u.packPrice||u.dailyCost||6.50)+'"></div>'
     + '<div class="input-group"><label class="input-label">СТИКОВ В ПАЧКЕ</label><input class="input" id="s-packsize" type="number" value="'+(u.packSize||20)+'"></div>'
     + '<div class="input-group" style="margin:0"><label class="input-label">СТИКОВ/ДЕНЬ</label><input class="input" id="s-puffs" type="number" value="'+(u.dailyPuffs||20)+'"></div>'
     + '</div>'
@@ -1454,7 +1450,7 @@ settings(el, data) {
     + '<button class="btn-danger" onclick="window._resetApp()">⟲ Сбросить все данные</button>'
     + '</div>';
   window._saveSettings=function(){
-    var packP=+document.getElementById('s-cost').value||(u.packPrice||350);
+    var packP=+document.getElementById('s-cost').value||(u.packPrice||6.50);
     var packSz=+document.getElementById('s-packsize').value||(u.packSize||20);
     var sticks=+document.getElementById('s-puffs').value||(u.dailyPuffs||20);
     var quitMethod=document.getElementById('s-method').value;
@@ -1466,11 +1462,10 @@ settings(el, data) {
       quitDate:document.getElementById('s-date').value||u.quitDate,
       quitMethod: quitMethod,
       gradualReductionPct: gradualPct,
-      nicotineStrength: +document.getElementById('s-nic').value || (u.nicotineStrength||20),
       packPrice:packP,
       packSize:packSz,
       dailyPuffs:sticks,
-      dailyCost:Math.round(sticks*(packP/packSz))
+      dailyCost:Math.round(sticks*(packP/packSz)*100)/100
     });
     var fresh=Storage.get()||Storage.init();
     fresh.settings = Object.assign({}, fresh.settings, { notifications:notifEnabled, reminderTime:reminderTime });

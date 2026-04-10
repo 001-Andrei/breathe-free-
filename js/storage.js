@@ -21,10 +21,9 @@ const Storage = {
       user: {
         name: '', quitDate: null, quitMethod: 'cold',
         deviceType: 'iqos',
-        nicotineStrength: 20,
         gradualReductionPct: 20,
         gradualStartDate: null,
-        dailyPuffs: 20, packPrice: 350, packSize: 20, dailyCost: 350,
+        dailyPuffs: 20, packPrice: 6.50, packSize: 20, dailyCost: 6.50,
         values: [], currentLevel: 1, setupComplete: false
       },
       progress: {
@@ -166,7 +165,7 @@ const Storage = {
     if (u.quitDate && u.dailyPuffs) {
       const sticksSaved = Object.values(logs).reduce((s, l) => s + Math.max(0, u.dailyPuffs - l.puffs), 0);
       d.progress.totalPuffsAvoided = sticksSaved;
-      const costPerStick = (u.packPrice || u.dailyCost || 350) / (u.packSize || 20);
+      const costPerStick = (u.packPrice || u.dailyCost || 6.50) / (u.packSize || 20);
       d.progress.moneySaved = Math.round(sticksSaved * costPerStick);
     }
   },
