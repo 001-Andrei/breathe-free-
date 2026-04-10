@@ -240,8 +240,8 @@ const ACHIEVEMENTS = [
   { id: 'prc50', cat: 'practice', emoji: '🧘', name: '50 упражнений', desc: 'Выполнено 50 упражнений', check: s => s.exercisesCompleted.length >= 50 },
   { id: 'sos1', cat: 'practice', emoji: '🛡', name: 'Первая победа', desc: 'Справился с тягой через SOS', check: s => s.sosWins >= 1 },
   { id: 'sos10', cat: 'practice', emoji: '🔥', name: '10 побед над тягой', desc: '10 раз справился через SOS', check: s => s.sosWins >= 10 },
-  { id: 'mon1', cat: 'practice', emoji: '💰', name: 'Первая тысяча', desc: 'Сэкономлено ₽1000', check: s => s.moneySaved >= 1000 },
-  { id: 'mon10', cat: 'practice', emoji: '💎', name: 'Десять тысяч', desc: 'Сэкономлено ₽10000', check: s => s.moneySaved >= 10000 },
+  { id: 'mon1', cat: 'practice', emoji: '💰', name: 'Первые €50', desc: 'Сэкономлено €50', check: s => s.moneySaved >= 50 },
+  { id: 'mon10', cat: 'practice', emoji: '💎', name: '€500 сэкономлено', desc: 'Сэкономлено €500', check: s => s.moneySaved >= 500 },
 ];
 
 // ═══ HEALTH TIMELINE ═══
@@ -292,12 +292,12 @@ const VALUES = [
 
 // ═══ SAVINGS GOALS ═══
 const SAVINGS_GOALS = [
-  { name: 'Кофе', emoji: '☕', price: 300 },
-  { name: 'Книга', emoji: '📚', price: 800 },
-  { name: 'Кино', emoji: '🎬', price: 1500 },
-  { name: 'Ужин', emoji: '🍽', price: 3000 },
-  { name: 'Кроссовки', emoji: '👟', price: 8000 },
-  { name: 'Авиабилет', emoji: '✈️', price: 15000 },
-  { name: 'Смартфон', emoji: '📱', price: 50000 },
-  { name: 'Отпуск', emoji: '🏖', price: 100000 },
+  { name: 'Кофе', emoji: '☕', price: 3 },
+  { name: 'Обед', emoji: '🍽', price: 15 },
+  { name: 'Кино', emoji: '🎬', price: 12 },
+  { name: 'Ужин', emoji: '🍷', price: 50 },
+  { name: 'Кроссовки', emoji: '👟', price: 100 },
+  { name: 'Авиабилет', emoji: '✈️', price: 200 },
+  { name: 'Смартфон', emoji: '📱', price: 800 },
+  { name: 'Отпуск', emoji: '🏖', price: 1500 },
 ];
