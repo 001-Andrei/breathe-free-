@@ -993,7 +993,8 @@ urgeHelp(el, data) {
       };
       el.innerHTML = '<div class="screen"><button onclick="window._uBack2()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← К упражнениям</button>'
         + '<div class="card" style="margin-bottom:20px">' + (bodies[window._sosTx]||bodies.plan) + '</div>'
-        + '<button class="btn-primary" onclick="render(3)">Записать результат →</button></div>';
+        + '<button class="btn-primary" onclick="window._uStep3()">Записать результат →</button></div>';
+      window._uStep3=function(){render(3);};
       window._uBack2=function(){render(1);};
       window._startSosWave=function(){var d=document.getElementById('wt'),b=document.getElementById('wbtn');if(!d||!b)return;b.disabled=true;b.textContent='Идёт...';var r=300,iv=setInterval(function(){r--;if(d)d.textContent=Math.floor(r/60)+':'+String(r%60).padStart(2,'0');if(r<=0){clearInterval(iv);render(3);}},1000);};
       window._sosLeaf=function(){var i=document.getElementById('lf-inp'),o=document.getElementById('lf-out');if(i&&i.value.trim()&&o){o.textContent='🍃 «'+i.value+'» — отпущено';i.value='';}};
@@ -1024,8 +1025,10 @@ urgeHelp(el, data) {
         var newAchs=Storage.checkAndUnlockAchievements();
         newAchs.forEach(function(a){Toast.show(a.emoji+' '+a.name,'success');});
       }
-      // Log craving
-      Storage.logCraving(today(),{time:new Date().toISOString(),type:urgeType,intensity:window._sosInt||5,result:won?'won':'used'});
+      // Log craving (for stats) + journal entry (for Дневник tab)
+      var cravingEntry = {time:new Date().toISOString(),type:urgeType,intensity:window._sosInt||5,result:won?'won':'used'};
+      Storage.logCraving(today(), cravingEntry);
+      Storage.addJournalEntry({type:urgeType, intensity:window._sosInt||5, result:won?'won':'used'});
       el.innerHTML = '<div class="screen screen-full" style="text-align:center;padding-top:60px">'
         + (won
           ? '<div style="font-size:64px;margin-bottom:16px">🎉</div><h2 style="font-size:26px;font-weight:800;margin-bottom:10px">Ты справился!</h2><p style="color:var(--text2);font-size:16px;line-height:1.6;margin-bottom:32px">Каждая победа над тягой укрепляет новую нейронную связь.<br>Ты становишься свободнее.</p>'
