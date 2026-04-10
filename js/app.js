@@ -401,7 +401,7 @@ home(el, data) {
     // ── SOS ──
     + '<button class="btn-sos" onclick="App.navigate(\'urge-help\')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
     // ── Quick links ──
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;align-items:stretch">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;grid-auto-rows:1fr">'
     + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%;display:flex;flex-direction:column" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
     + '<div style="font-size:22px;margin-bottom:6px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
     + '<div style="font-weight:700;font-size:14px;margin-bottom:2px">Уровень ' + lvlNum + '</div>'
@@ -944,12 +944,12 @@ urgeHelp(el, data) {
     step = s;
     if(s===0) {
       el.innerHTML = '<div class="screen screen-full" style="background:linear-gradient(135deg,#FFF3E0,#FFEBEE);min-height:100dvh">'
-        + '<div style="text-align:center;padding:32px 0 20px"><div style="font-size:48px">🆘</div>'
+        + '<div style="text-align:center;padding:16px 0 12px"><div style="font-size:48px">🆘</div>'
         + '<h2 style="font-size:24px;font-weight:800;margin-top:8px">Помощь при тяге</h2>'
         + '<p style="color:var(--text2);font-size:15px;margin-top:6px">Что ты сейчас чувствуешь?</p></div>'
-        + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+        + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;grid-auto-rows:1fr">'
         + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','"Мне нужна затяжка"'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
-            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:32px;margin-bottom:8px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px;margin-top:4px">'+t[3]+'</div></div>';
+            return '<div class="card" style="text-align:center;cursor:pointer;padding:16px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:30px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px">'+t[3]+'</div></div>';
           }).join('')
         + '</div>'
         + '<div style="padding:16px"><button class="btn-secondary" onclick="App.navigate(\'home\')">← Назад</button></div></div>';
@@ -994,9 +994,21 @@ urgeHelp(el, data) {
       el.innerHTML = '<div class="screen"><button onclick="window._uBack2()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← К упражнениям</button>'
         + '<div class="card" style="margin-bottom:20px">' + (bodies[window._sosTx]||bodies.plan) + '</div>'
         + '<button class="btn-primary" onclick="window._uStep3()">Записать результат →</button></div>';
-      window._uStep3=function(){render(3);};
+      window._uStep3=function(){
+        var note='';
+        var dfInp=document.getElementById('df-inp');
+        var lfInp=document.getElementById('lf-inp');
+        if(dfInp&&dfInp.value.trim()) note=dfInp.value.trim();
+        else if(lfInp&&lfInp.value.trim()) note=lfInp.value.trim();
+        else {
+          var selEmo=document.querySelector('._semo.on');
+          if(selEmo) note=selEmo.dataset.e||'';
+        }
+        window._sosNote=note;
+        render(3);
+      };
       window._uBack2=function(){render(1);};
-      window._startSosWave=function(){var d=document.getElementById('wt'),b=document.getElementById('wbtn');if(!d||!b)return;b.disabled=true;b.textContent='Идёт...';var r=300,iv=setInterval(function(){r--;if(d)d.textContent=Math.floor(r/60)+':'+String(r%60).padStart(2,'0');if(r<=0){clearInterval(iv);render(3);}},1000);};
+      window._startSosWave=function(){var d=document.getElementById('wt'),b=document.getElementById('wbtn');if(!d||!b)return;b.disabled=true;b.textContent='Идёт...';var r=300,iv=setInterval(function(){r--;if(d)d.textContent=Math.floor(r/60)+':'+String(r%60).padStart(2,'0');if(r<=0){clearInterval(iv);window._uStep3();}},1000);};
       window._sosLeaf=function(){var i=document.getElementById('lf-inp'),o=document.getElementById('lf-out');if(i&&i.value.trim()&&o){o.textContent='🍃 «'+i.value+'» — отпущено';i.value='';}};
       setTimeout(function(){
         document.querySelectorAll('._semo').forEach(function(b){var msgs={'Тревога':'Тревога пытается тебя защитить. Но ты в безопасности прямо сейчас.','Стресс':'Стресс — сигнал важности. Вейп не снимет стресс, но ты справишься.','Скука':'Скука — не чрезвычайная ситуация. Она пройдёт за 3 минуты.','Грусть':'Позволь грусти быть. Она не требует действий.','Злость':'Злость — энергия. Выдохни её. Не вейп её.','Одиночество':'Напиши кому-нибудь прямо сейчас. Связь сильнее никотина.'};
@@ -1028,7 +1040,7 @@ urgeHelp(el, data) {
       // Log craving (for stats) + journal entry (for Дневник tab)
       var cravingEntry = {time:new Date().toISOString(),type:urgeType,intensity:window._sosInt||5,result:won?'won':'used'};
       Storage.logCraving(today(), cravingEntry);
-      Storage.addJournalEntry({type:urgeType, intensity:window._sosInt||5, result:won?'won':'used'});
+      Storage.addJournalEntry({type:urgeType, intensity:window._sosInt||5, result:won?'won':'used', note:window._sosNote||''});
       el.innerHTML = '<div class="screen screen-full" style="text-align:center;padding-top:60px">'
         + (won
           ? '<div style="font-size:64px;margin-bottom:16px">🎉</div><h2 style="font-size:26px;font-weight:800;margin-bottom:10px">Ты справился!</h2><p style="color:var(--text2);font-size:16px;line-height:1.6;margin-bottom:32px">Каждая победа над тягой укрепляет новую нейронную связь.<br>Ты становишься свободнее.</p>'
@@ -1324,7 +1336,8 @@ journal(el, data) {
         +'<div style="font-size:13px;font-weight:600">'+(typeLabels[j.type]||'Запись')+'</div>'
         +'<div style="font-size:11px;color:var(--text3)">'+d.toLocaleDateString('ru')+' '+time+'</div></div>'
         +(j.intensity?'<div style="color:var(--text2);font-size:12px;margin-top:4px">Интенсивность: '+j.intensity+'/10</div>':'')
-        +'<div style="font-size:12px;margin-top:6px;padding:3px 10px;border-radius:10px;display:inline-block;background:'+(j.result==='won'?'var(--green-light)':'var(--red-light)')+';color:'+(j.result==='won'?'var(--green)':'var(--red)')+';font-weight:600">'+(j.result==='won'?'✓ Справился':'Использовал')+'</div>'
+        +(j.note?'<div style="color:var(--text);font-size:13px;margin-top:6px;font-style:italic;line-height:1.4">«'+j.note+'»</div>':'')
+        +'<div style="font-size:12px;margin-top:6px;padding:3px 10px;border-radius:10px;display:inline-block;background:'+(j.result==='won'?'var(--green-light)':'var(--red-light)')+';color:'+(j.result==='won'?'#166534':'var(--red)')+';font-weight:600">'+(j.result==='won'?'✓ Справился':'Использовал')+'</div>'
         +'</div>';
     }).join('');
   }
