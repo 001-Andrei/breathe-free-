@@ -3,9 +3,34 @@
 const App = {
   currentScreen: null,
   prevScreen: null,
+  history: [],
+  screenTitles: {
+    welcome: 'Дыши Свободно',
+    home: 'Главная',
+    levels: 'Уровни',
+    level: 'Уровень',
+    exercise: 'Упражнение',
+    'urge-help': 'Помощь при тяге',
+    tracker: 'Трекер',
+    stats: 'Прогресс',
+    breathing: 'Дыхание',
+    health: 'Восстановление',
+    savings: 'Сбережения',
+    achievements: 'Достижения',
+    journal: 'Дневник',
+    settings: 'Настройки'
+  },
 
-  navigate(screen, params) {
+  navigate(screen, params, options) {
     params = params || {};
+    options = options || {};
+    if(!options.skipHistory && this.currentScreen && this.currentScreen !== screen) {
+      this.history.push(this.currentScreen);
+    }
+    var data = Storage.get() || Storage.init();
+    if(!data.user.setupComplete && screen !== 'welcome') {
+      screen = 'welcome';
+    }
     this.prevScreen = this.currentScreen;
     this.currentScreen = screen;
     window.scrollTo(0,0);
@@ -14,14 +39,9 @@ const App = {
     var tabbar = document.getElementById('tabbar');
     var tabScreens = ['home','levels','journal','stats','settings'];
     if(tabbar) tabbar.classList.toggle('hd', !tabScreens.includes(screen));
+    this._updateTopbar(screen, tabScreens.includes(screen));
     this._updateTabbar(screen);
     var app = document.getElementById('app');
-    var data = Storage.get() || Storage.init();
-    if(!data.user.setupComplete && screen !== 'welcome') {
-      this.currentScreen = 'welcome';
-      Screens.welcome(app, data);
-      return;
-    }
     switch(screen) {
       case 'welcome':      Screens.welcome(app, data); break;
       case 'home':         Screens.home(app, data); break;
@@ -41,12 +61,29 @@ const App = {
     }
   },
 
-  back() { this.navigate(this.prevScreen || 'home'); },
+  back() {
+    var target = this.history.pop() || this.prevScreen || 'home';
+    this.navigate(target, null, { skipHistory: true });
+  },
 
   _updateTabbar(active) {
     document.querySelectorAll('.tab-btn').forEach(function(b){
       b.classList.toggle('active', b.dataset.screen === active);
     });
+  },
+
+  _updateTopbar(screen, isTabScreen) {
+    var topbar = document.getElementById('topbar');
+    var title = document.getElementById('topbar-title');
+    var back = document.getElementById('topbar-back');
+    if(!topbar || !title || !back) return;
+    var show = !isTabScreen;
+    topbar.classList.toggle('hd', !show);
+    title.textContent = this.screenTitles[screen] || 'Дыши Свободно';
+    var hideBackInTopbar = ['urge-help'].includes(screen);
+    back.classList.toggle('hd', hideBackInTopbar);
+    back.disabled = this.history.length === 0 && !this.prevScreen;
+    back.classList.toggle('disabled', back.disabled);
   },
 
   init() {
@@ -469,7 +506,6 @@ levelDetail(el, data, lvlId) {
   if(!lvl){App.navigate('levels');return;}
   var doneEx = data.progress.exercisesCompleted || [];
   var html = '<div class="screen">'
-    + '<button class="_back-levels" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
     + '<div style="text-align:center;padding:16px 0 24px">'
     + '<div style="font-size:48px;margin-bottom:8px">' + lvl.emoji + '</div>'
     + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">Уровень ' + lvl.id + ': ' + lvl.title + '</h2>'
@@ -493,7 +529,6 @@ levelDetail(el, data, lvlId) {
   }
   html += '</div>';
   el.innerHTML = html;
-  el.querySelector('._back-levels').onclick = function() { App.navigate('levels'); };
   el.querySelectorAll('.exercise-card').forEach(function(card) {
     card.onclick = function() { App.navigate('exercise', {id: card.dataset.exid}); };
   });
@@ -883,7 +918,6 @@ exercise(el, data, exId) {
   }
 
   el.innerHTML = '<div class="screen">'
-    + '<button onclick="App.navigate(\'level\',{id:'+lvlId+'})" style="color:var(--text2);font-size:14px;margin-bottom:16px;display:flex;align-items:center;gap:6px">← Назад</button>'
     + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
     + '<div style="font-size:36px">'+ex.emoji+'</div>'
     + '<div><h2 style="font-size:20px;font-weight:800">'+ex.title+'</h2>'
@@ -931,7 +965,7 @@ urgeHelp(el, data) {
         situation: [{emoji:'⚡',title:'Экстренный план',action:function(){window._sosTx='plan';render(2);}},{emoji:'💨',title:'Дыхание 4-7-8',action:function(){App.navigate('breathing');}}]
       };
       var exs = exercises[urgeType]||exercises.body;
-      el.innerHTML = '<div class="screen"><button onclick="window._uBack()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
+      el.innerHTML = '<div class="screen"><button onclick="window._uBack()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← К выбору состояния</button>'
         + '<h2 style="font-size:22px;font-weight:800;margin-bottom:6px">Выбери упражнение</h2>'
         + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Одной минуты может хватить</p>'
         + exs.map(function(e,i){return '<div class="card" style="cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:14px" onclick="window._sosEx('+i+')"><div style="font-size:32px">'+e.emoji+'</div><div style="font-weight:700;font-size:16px">'+e.title+'</div><div style="margin-left:auto;color:var(--text3)">›</div></div>';}).join('')
@@ -959,9 +993,9 @@ urgeHelp(el, data) {
               +'<div style="font-size:14px;line-height:1.6;color:var(--text)">'+letter+'</div></div>' : '');
         })()
       };
-      el.innerHTML = '<div class="screen"><button onclick="window._uBack2()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
+      el.innerHTML = '<div class="screen"><button onclick="window._uBack2()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← К упражнениям</button>'
         + '<div class="card" style="margin-bottom:20px">' + (bodies[window._sosTx]||bodies.plan) + '</div>'
-        + '<button class="btn-primary" onclick="render(3)">Проверить интенсивность →</button></div>';
+        + '<button class="btn-primary" onclick="render(3)">Оценить тягу (шаг 3 из 4) →</button></div>';
       window._uBack2=function(){render(1);};
       window._startSosWave=function(){var d=document.getElementById('wt'),b=document.getElementById('wbtn');if(!d||!b)return;b.disabled=true;b.textContent='Идёт...';var r=300,iv=setInterval(function(){r--;if(d)d.textContent=Math.floor(r/60)+':'+String(r%60).padStart(2,'0');if(r<=0){clearInterval(iv);render(3);}},1000);};
       window._sosLeaf=function(){var i=document.getElementById('lf-inp'),o=document.getElementById('lf-out');if(i&&i.value.trim()&&o){o.textContent='🍃 «'+i.value+'» — отпущено';i.value='';}};
@@ -1018,7 +1052,6 @@ tracker(el, data) {
   function render() {
     var col = puffs===0?'var(--green)':puffs<=u.dailyPuffs*.5?'var(--blue)':puffs<=u.dailyPuffs?'var(--orange)':'var(--red)';
     el.innerHTML = '<div class="screen">'
-      + navBar('Трекер дня', "App.navigate('home')")
       + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">' + new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'}) + '</p>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">СТИКОВ СЕГОДНЯ</div>'
@@ -1193,7 +1226,6 @@ health(el, data) {
   var now = new Date();
   var minsSinceQuit = quitDate ? Math.max(0,Math.floor((now-quitDate)/60000)) : 0;
   el.innerHTML = '<div class="screen">'
-    + navBar('Здоровье', "App.navigate('home')")
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Что происходит в твоём теле</p>'
     + (!u.quitDate?'<div class="card" style="background:var(--orange-light);border-color:rgba(245,166,35,.2);margin-bottom:16px;color:var(--orange)">Установи дату отказа в настройках чтобы видеть прогресс</div>':'')
     + HEALTH.map(function(h){
@@ -1220,7 +1252,6 @@ savings(el, data) {
   var daysSince = quitDate ? Math.max(0,Math.floor((now-quitDate)/86400000)) : 0;
   var saved = Math.round(daysSince * (u.dailyCost||200));
   el.innerHTML = '<div class="screen">'
-    + navBar('Экономия', "App.navigate('home')")
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Деньги, которые остались с тобой</p>'
     + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,#F0FFF8,#FFF9F0)">'
     + '<div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px">УЖЕ СЭКОНОМЛЕНО</div>'
@@ -1253,7 +1284,6 @@ achievements(el, data) {
   var p = data.progress;
   var cats = [{id:'level',name:'Уровни программы'},{id:'streak',name:'Серия дней'},{id:'practice',name:'Практика'}];
   el.innerHTML = '<div class="screen">'
-    + navBar('Достижения', "App.navigate('settings')")
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">'+p.achievements.length+' из '+ACHIEVEMENTS.length+'</p>'
     + '<div class="pbar" style="margin-bottom:24px"><div class="pbar-fill" style="width:'+Math.round((p.achievements.length/ACHIEVEMENTS.length)*100)+'%"></div></div>'
     + cats.map(function(cat){

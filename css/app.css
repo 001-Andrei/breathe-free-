@@ -27,6 +27,11 @@
   --text2:         #6b6b73;
   --text3:         #aeaeb2;
 
+  /* Compat */
+  --bg:            #eef5ff;
+  --card:          var(--glass);
+  --border:        rgba(255,255,255,.70);
+
   /* Glass surfaces */
   --glass:         rgba(255,255,255,.68);
   --glass-strong:  rgba(255,255,255,.85);
@@ -85,7 +90,7 @@ body {
   user-select: none;
   max-width: 430px;
   margin: 0 auto;
-  padding-top: var(--st);
+  padding-top: calc(var(--st) + 54px);
 }
 input,button,textarea,select { font-family:inherit; font-size:inherit; }
 button { cursor:pointer; border:none; background:none; }
@@ -97,10 +102,34 @@ input:focus,textarea:focus,select:focus { outline:none; }
 .screen      { padding:20px 16px 24px; animation:fadeUp .22s ease; }
 .screen-full { min-height:100dvh; padding:0; }
 
-/* ═══ NAV BAR — стеклянная шапка ═══ */
+/* ═══ TOP BAR — стеклянная шапка (глобальная) ═══ */
+.topbar {
+  position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px; z-index: 110;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  padding: calc(10px + var(--st)) 8px 10px;
+  background: rgba(220,238,255,.82);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 0 1px 0 rgba(255,255,255,.6), var(--shadow-xs);
+}
+.topbar-back {
+  justify-self: start;
+  color: var(--accent); font-size: 15px; font-weight: 600;
+  padding: 6px 10px; border-radius: 12px;
+  background: rgba(42,171,238,.10);
+  display: flex; align-items: center; gap: 2px;
+  transition: background .12s;
+}
+.topbar-back:active { background: rgba(42,171,238,.20); }
+.topbar-back.disabled { opacity: .4; pointer-events: none; }
+.topbar-title { font-size: 17px; font-weight: 700; text-align: center; }
+.topbar-spacer { justify-self: end; width: 72px; height: 1px; }
+
+/* ═══ NAV BAR — встроенная шапка для экранов без topbar ═══ */
 .nav-bar {
   display:flex; align-items:center; justify-content:space-between;
-  /* вырываемся за padding экрана */
   margin: -20px -16px 20px;
   padding: 13px 4px;
   background: rgba(220,238,255,.78);
