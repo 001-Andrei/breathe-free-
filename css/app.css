@@ -336,7 +336,7 @@ input[type=range] {
 }
 
 /* ═══ STATS GRID ═══ */
-.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; grid-auto-rows:1fr; }
 .stat-card {
   background:var(--glass);
   backdrop-filter:blur(20px) saturate(160%);
