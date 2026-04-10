@@ -995,22 +995,30 @@ urgeHelp(el, data) {
         + '<div class="card" style="margin-bottom:20px">' + (bodies[window._sosTx]||bodies.plan) + '</div>'
         + '<button class="btn-primary" onclick="window._uStep3()">Записать результат →</button></div>';
       window._uStep3=function(){
-        var note='';
-        var dfInp=document.getElementById('df-inp');
-        var lfInp=document.getElementById('lf-inp');
-        if(dfInp&&dfInp.value.trim()) note=dfInp.value.trim();
-        else if(lfInp&&lfInp.value.trim()) note=lfInp.value.trim();
-        else {
+        // leaves notes already captured in _sosLeaf; capture other exercise inputs now
+        if(!window._sosNote) {
+          var dfInp=document.getElementById('df-inp');
           var selEmo=document.querySelector('._semo.on');
-          if(selEmo) note=selEmo.dataset.e||'';
+          if(dfInp&&dfInp.value.trim()) window._sosNote=dfInp.value.trim();
+          else if(selEmo) window._sosNote=selEmo.dataset.e||'';
         }
-        window._sosNote=note;
         render(3);
       };
+      window._sosNote=''; // reset on entering step 2
       window._uBack2=function(){render(1);};
       window._startSosWave=function(){var d=document.getElementById('wt'),b=document.getElementById('wbtn');if(!d||!b)return;b.disabled=true;b.textContent='Идёт...';var r=300,iv=setInterval(function(){r--;if(d)d.textContent=Math.floor(r/60)+':'+String(r%60).padStart(2,'0');if(r<=0){clearInterval(iv);window._uStep3();}},1000);};
-      window._sosLeaf=function(){var i=document.getElementById('lf-inp'),o=document.getElementById('lf-out');if(i&&i.value.trim()&&o){o.textContent='🍃 «'+i.value+'» — отпущено';i.value='';}};
-      setTimeout(function(){
+      window._sosLeaf=function(){
+        var i=document.getElementById('lf-inp'),o=document.getElementById('lf-out');
+        if(i&&i.value.trim()&&o){
+          var thought=i.value.trim();
+          // Accumulate released thoughts (supports multiple per session)
+          window._sosNote=window._sosNote ? window._sosNote+' · '+thought : thought;
+          // Show running list of released thoughts
+          var existing=o.innerHTML?o.innerHTML+'<br>':'';
+          o.innerHTML=existing+'🍃 «'+thought+'» — отпущено';
+          i.value=''; // clear — releasing is the point
+        }
+      };      setTimeout(function(){
         document.querySelectorAll('._semo').forEach(function(b){var msgs={'Тревога':'Тревога пытается тебя защитить. Но ты в безопасности прямо сейчас.','Стресс':'Стресс — сигнал важности. Вейп не снимет стресс, но ты справишься.','Скука':'Скука — не чрезвычайная ситуация. Она пройдёт за 3 минуты.','Грусть':'Позволь грусти быть. Она не требует действий.','Злость':'Злость — энергия. Выдохни её. Не вейп её.','Одиночество':'Напиши кому-нибудь прямо сейчас. Связь сильнее никотина.'};
           b.onclick=function(){document.querySelectorAll('._semo').forEach(function(x){x.classList.remove('on');});b.classList.add('on');var r=document.getElementById('se-r');if(r){r.style.display='block';r.textContent=msgs[b.dataset.e]||'Это нормально. Это пройдёт.';}};
         });
