@@ -99,7 +99,7 @@ input:focus,textarea:focus,select:focus { outline:none; }
 
 /* ═══ APP LAYOUT ═══ */
 #app { padding-bottom:calc(64px + var(--sb)); min-height:100dvh; position:relative; z-index:1; }
-.screen      { padding:20px 16px 24px; animation:fadeUp .22s ease; }
+.screen      { padding:20px 18px 24px; animation:fadeUp .22s ease; }
 .screen-full { min-height:100dvh; padding:0; }
 
 /* ═══ TOP BAR — стеклянная шапка (глобальная) ═══ */
