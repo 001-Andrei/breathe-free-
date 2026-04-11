@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2AABEE"/>
+      <stop offset="100%" stop-color="#4CAF82"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+  <!-- Left lung -->
+  <path d="M50 22 L50 58 Q50 68 44 72 Q38 76 36 70 Q33 60 36 50 Q39 40 44 34 Q47 28 50 22Z" fill="white" opacity="0.92"/>
+  <!-- Right lung -->
+  <path d="M50 22 L50 58 Q50 68 56 72 Q62 76 64 70 Q67 60 64 50 Q61 40 56 34 Q53 28 50 22Z" fill="white" opacity="0.92"/>
+  <!-- Trachea -->
+  <rect x="47" y="16" width="6" height="14" rx="3" fill="white" opacity="0.92"/>
+</svg>
