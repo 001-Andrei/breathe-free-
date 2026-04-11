@@ -562,6 +562,20 @@ exercise(el, data, exId) {
   var done = (data.progress.exercisesCompleted||[]).includes(exId);
 
   function markDone() {
+    // Save journal-type exercise notes to valuesJournal (visible in Дневник → Ценности)
+    if (ex.type === 'journal') {
+      var selEm = document.querySelector('._em.on');
+      var noteEl = document.getElementById('jnl-note');
+      var emotion = selEm ? selEm.dataset.em : '';
+      var note = noteEl ? noteEl.value.trim() : '';
+      if (emotion || note) {
+        var parts = [];
+        if (emotion) parts.push(emotion);
+        if (note) parts.push(note);
+        Storage.addValuesEntry({type:'observation', source: ex.title, text: parts.join(' — ')});
+        Toast.show('📝 Запись сохранена в Дневнике → Ценности','success');
+      }
+    }
     Storage.completeExercise(exId);
     var fresh = Storage.get();
     var lvlExIds = lvl.exercises.map(function(e){return e.id;});
@@ -1593,12 +1607,14 @@ journal(el, data) {
       + '<button style="padding:12px 14px;background:var(--bg);border-radius:10px;color:var(--text2);font-size:14px" id="vj-cancel-btn">✕</button>'
       + '</div></div>'
       + (valuesJournal.length===0
-        ? '<div class="card" style="text-align:center;padding:28px"><div style="font-size:28px;margin-bottom:8px">🌱</div><div style="color:var(--text2);font-size:14px">Здесь будут твои ценностные действия.<br>Начни с уровня 5.</div></div>'
-        : valuesJournal.slice(0,20).map(function(e){
+        ? '<div class="card" style="text-align:center;padding:28px"><div style="font-size:28px;margin-bottom:8px">🌱</div><div style="color:var(--text2);font-size:14px">Здесь будут твои ценностные действия и наблюдения из упражнений.</div></div>'
+        : valuesJournal.slice(0,30).map(function(e){
             var d=new Date(e.date);
+            var timeStr = d.toLocaleDateString('ru',{weekday:'short',day:'numeric',month:'long'}) + ' ' + d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
             return '<div class="card card-sm" style="margin-bottom:8px">'
-              +'<div style="font-size:11px;color:var(--text3);margin-bottom:4px">'+d.toLocaleDateString('ru',{weekday:'short',day:'numeric',month:'long'})+'</div>'
-              +'<div style="font-size:14px;line-height:1.5">'+e.text+'</div>'
+              +(e.source ? '<div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:3px">📝 '+e.source+'</div>' : '')
+              +'<div style="font-size:14px;line-height:1.5;margin-bottom:4px">'+e.text+'</div>'
+              +'<div style="font-size:12px;color:var(--text3)">'+timeStr+'</div>'
               +'</div>';
           }).join(''));
 
