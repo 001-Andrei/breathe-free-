@@ -401,14 +401,14 @@ home(el, data) {
     // ── SOS ──
     + '<button class="btn-sos" onclick="App.navigate(\'urge-help\')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
     // ── Quick links ──
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;grid-auto-rows:1fr;align-items:stretch">'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%;height:100%;display:flex;flex-direction:column" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
+    + '<div style="display:flex;gap:10px;margin-bottom:10px">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;flex:1;min-width:0;display:flex;flex-direction:column" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
     + '<div style="font-size:22px;margin-bottom:6px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
     + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Уровень ' + lvlNum + '</div>'
     + '<div style="color:var(--text2);font-size:14px;margin-bottom:auto;padding-bottom:8px">' + doneCount + '/' + totalEx + ' упр.</div>'
     + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.round(doneCount/totalEx*100) + '%"></div></div>'
     + '</button>'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%;height:100%;display:flex;flex-direction:column" onclick="App.navigate(\'tracker\')">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;flex:1;min-width:0;display:flex;flex-direction:column" onclick="App.navigate(\'tracker\')">'
     + '<div style="font-size:22px;margin-bottom:6px">📊</div>'
     + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Трекер дня</div>'
     + '<div style="color:var(--text2);font-size:14px;margin-bottom:auto;padding-bottom:8px">Сегодня: <b style="color:var(--text)">' + todayLog.puffs + '</b> стиков</div>'
