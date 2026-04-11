@@ -1062,17 +1062,31 @@ urgeHelp(el, data) {
 tracker(el, data) {
   var u = data.user, logs = data.dailyLogs;
   var todayKey = today();
-  var todayLog = logs[todayKey] || {puffs:0,mood:3,cravings:[],note:''};
+  var todayLog = logs[todayKey] || {puffs:0,mood:3,cravings:[],note:'',stickLog:[]};
   var puffs = todayLog.puffs;
   var mood = todayLog.mood || 3;
+  var stickLog = (todayLog.stickLog || []).slice();
   var isGradual = u.quitMethod === 'gradual';
   var goalPuffs = isGradual ? Storage.getGradualGoalForDate(todayKey, u) : 0;
   var moodEmojis = ['😢','😔','😐','🙂','😄'];
+  var showNoteInput = false;
+
+  function _persist() {
+    var curNote = (document.getElementById('day-note') || {}).value;
+    if (curNote === undefined) curNote = todayLog.note || '';
+    Storage.logDay(todayKey, puffs, mood, curNote);
+    var d = Storage.get();
+    if (d) {
+      if (!d.dailyLogs[todayKey]) d.dailyLogs[todayKey] = {puffs:0,mood:3,cravings:[],note:'',stickLog:[]};
+      d.dailyLogs[todayKey].stickLog = stickLog;
+      Storage.save(d);
+    }
+  }
 
   function render() {
     var col = puffs===0?'var(--green)':puffs<=u.dailyPuffs*.5?'var(--blue)':puffs<=u.dailyPuffs?'var(--orange)':'var(--red)';
     el.innerHTML = '<div class="screen">'
-      + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">' + new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'}) + '</p>'
+      + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">' + new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'}) + '</p>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">СТИКОВ СЕГОДНЯ</div>'
       + '<div style="display:flex;align-items:center;justify-content:center;gap:24px">'
@@ -1082,27 +1096,95 @@ tracker(el, data) {
       + '<button class="counter-btn" onclick="window._adj(1)">+</button>'
       + '</div>'
       + (puffs===0?'<div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:12px;color:#166534;font-weight:700;text-align:center;font-size:15px" id="cday-msg">🎉 Чистый день!</div>':'')
-      + (isGradual&&goalPuffs!==null?'<div class="pbar" style="margin-top:16px"><div class="pbar-fill" style="width:'+Math.max(0,Math.min(100,Math.round(((goalPuffs-puffs)/Math.max(1,goalPuffs))*100)))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' стиков</div>':'')
+      + (isGradual&&goalPuffs!==null?'<div class="pbar" style="margin-top:12px"><div class="pbar-fill" style="width:'+Math.max(0,Math.min(100,Math.round(((goalPuffs-puffs)/Math.max(1,goalPuffs))*100)))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' стиков</div>':'')
+      + (showNoteInput
+          ? '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">'
+            + '<div style="font-size:12px;color:var(--text2);margin-bottom:6px">Причина (необязательно):</div>'
+            + '<div style="display:flex;gap:8px">'
+            + '<input class="input" id="stick-note-inp" placeholder="стресс, скука, компания..." style="flex:1;height:38px;padding:6px 10px;font-size:14px">'
+            + '<button onclick="window._confirmStickNote()" style="background:var(--blue);color:#fff;border:none;border-radius:10px;padding:0 16px;font-size:14px;font-weight:600;cursor:pointer">OK</button>'
+            + '</div></div>'
+          : '')
       + '</div>'
+      + (stickLog.length
+          ? '<div class="card" style="margin-bottom:12px">'
+            + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАПИСИ СЕГОДНЯ</div>'
+            + stickLog.map(function(s,i){
+                var t = new Date(s.time).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+                return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0'+(i<stickLog.length-1?';border-bottom:1px solid var(--border)':'')+'">'
+                  + '<span style="font-size:18px">🚬</span>'
+                  + '<div style="flex:1;min-width:0"><span style="font-size:12px;color:var(--text3)">'+t+'</span>'
+                  + (s.note?'<span style="font-size:13px;color:var(--text);margin-left:6px">'+s.note+'</span>':'')+'</div>'
+                  + '<button onclick="window._delStick('+i+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px;line-height:1">×</button>'
+                  + '</div>';
+              }).join('')
+            + '</div>'
+          : '')
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">НАСТРОЕНИЕ</div>'
       + '<div class="mood-row">'
       + moodEmojis.map(function(e,i){return '<button class="mood-btn'+(mood===i+1?' on':'')+'" onclick="window._mood('+(i+1)+')">'+e+'</button>';}).join('')
       + '</div></div>'
       + '<div class="card" style="margin-bottom:12px">'
-      + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАМЕТКА (НЕОБЯЗАТЕЛЬНО)</div>'
-      + '<textarea class="input" id="day-note" placeholder="Как прошёл день?" style="height:80px;resize:none;display:block;line-height:1.5" rows="3">'+( todayLog.note||'')+'</textarea></div>'
-      + '<button class="btn-primary" onclick="window._saveDay()">💾 Сохранить</button></div>';
+      + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАМЕТКА О ДНЕ (НЕОБЯЗАТЕЛЬНО)</div>'
+      + '<textarea class="input" id="day-note" placeholder="Как прошёл день?" style="height:80px;resize:none;display:block;line-height:1.5" rows="3">'+(todayLog.note||'')+'</textarea></div>'
+      + '<button class="btn-primary" onclick="window._saveDay()">💾 Сохранить</button>'
+      + '<p style="font-size:12px;color:var(--text3);text-align:center;margin-top:8px">Записи можно посмотреть в Дневнике → вкладка «Дни»</p>'
+      + '</div>';
 
-    window._adj=function(d){puffs=Math.max(0,puffs+d);render();};
-    window._mood=function(m){mood=m;render();};
-    window._saveDay=function(){
-      var note=document.getElementById('day-note');
-      Storage.logDay(todayKey,puffs,mood,note?note.value:'');
+    window._adj = function(delta) {
+      if (delta > 0) {
+        puffs++;
+        stickLog.push({time: new Date().toISOString(), note: ''});
+        showNoteInput = true;
+        _persist();
+        render();
+        var ni = document.getElementById('stick-note-inp');
+        if (ni) { ni.focus(); }
+      } else {
+        if (puffs > 0) {
+          puffs--;
+          if (stickLog.length > 0) stickLog.pop();
+          showNoteInput = false;
+          _persist();
+          render();
+        }
+      }
+    };
+
+    window._confirmStickNote = function() {
+      var ni = document.getElementById('stick-note-inp');
+      var note = ni ? ni.value.trim() : '';
+      if (stickLog.length > 0) stickLog[stickLog.length-1].note = note;
+      _persist();
+      showNoteInput = false;
+      render();
+    };
+
+    window._delStick = function(i) {
+      stickLog.splice(i, 1);
+      puffs = Math.max(0, puffs - 1);
+      showNoteInput = false;
+      _persist();
+      render();
+    };
+
+    window._mood = function(m) { mood = m; render(); };
+
+    window._saveDay = function() {
+      var note = document.getElementById('day-note');
+      var noteVal = note ? note.value : '';
+      Storage.logDay(todayKey, puffs, mood, noteVal);
+      var d = Storage.get();
+      if (d) {
+        if (!d.dailyLogs[todayKey]) d.dailyLogs[todayKey] = {puffs:0,mood:3,cravings:[],note:'',stickLog:[]};
+        d.dailyLogs[todayKey].stickLog = stickLog;
+        Storage.save(d);
+      }
       Toast.show('✅ Сохранено','success');
-      if(puffs===0){var m=document.getElementById('cday-msg');if(m)confetti(m);}
-      var newAchs=Storage.checkAndUnlockAchievements();
-      newAchs.forEach(function(a){Toast.show(a.emoji+' '+a.name,'success');});
+      if (puffs===0) { var m = document.getElementById('cday-msg'); if (m) confetti(m); }
+      var newAchs = Storage.checkAndUnlockAchievements();
+      newAchs.forEach(function(a){ Toast.show(a.emoji+' '+a.name,'success'); });
     };
   }
   render();
@@ -1390,6 +1472,7 @@ achievements(el, data) {
 journal(el, data) {
   var journal = data.journal || [];
   var valuesJournal = data.valuesJournal || [];
+  var dailyLogs = data.dailyLogs || {};
   var activeTab = 0;
   var filterType = 'all';
   var typeLabels = {body:'🫁 Тело', emotion:'😰 Эмоция', thought:'💭 Мысль', situation:'📍 Ситуация'};
@@ -1438,6 +1521,40 @@ journal(el, data) {
       +'</div>';
   }
 
+  function buildDailyLog() {
+    var moodEmojis = ['','😢','😔','😐','🙂','😄'];
+    var keys = Object.keys(dailyLogs).sort().reverse().slice(0,60);
+    if (!keys.length) {
+      return '<div class="card" style="text-align:center;padding:28px">'
+        + '<div style="font-size:28px;margin-bottom:8px">📋</div>'
+        + '<div style="color:var(--text2);font-size:14px">Нет записей трекера.<br>Открой Трекер и нажми + когда куришь.</div></div>';
+    }
+    return keys.map(function(dateKey) {
+      var log = dailyLogs[dateKey];
+      var d = new Date(dateKey);
+      var dateStr = d.toLocaleDateString('ru',{weekday:'short',day:'numeric',month:'long'});
+      var stickLog = (log.stickLog || []).filter(function(s){ return s.note; });
+      var puffsColor = log.puffs===0 ? 'var(--green)' : 'var(--text)';
+      return '<div class="card card-sm" style="margin-bottom:8px">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(log.note||stickLog.length?'8':'0')+'px">'
+        + '<div style="font-size:13px;font-weight:600">'+dateStr+'</div>'
+        + '<div style="display:flex;align-items:center;gap:8px">'
+        + (log.mood ? '<span style="font-size:18px">'+moodEmojis[log.mood]+'</span>' : '')
+        + '<span style="font-size:13px;font-weight:700;color:'+puffsColor+'">'+(log.puffs===0?'🎉 Чистый день':log.puffs+' 🚬')+'</span>'
+        + '</div></div>'
+        + (log.note ? '<div style="font-size:13px;color:var(--text);font-style:italic;line-height:1.4;margin-bottom:'+(stickLog.length?'8':'0')+'px">«'+log.note+'»</div>' : '')
+        + (stickLog.length
+            ? '<div style="border-top:1px solid var(--border);padding-top:6px">'
+              + stickLog.map(function(s){
+                  var t = new Date(s.time).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+                  return '<div style="font-size:12px;color:var(--text2);padding:2px 0">'+t+' — '+s.note+'</div>';
+                }).join('')
+              + '</div>'
+            : '')
+        + '</div>';
+    }).join('');
+  }
+
   function render(tab) {
     activeTab = tab;
     var triggersContent = '<button class="btn-primary" style="margin-bottom:14px" id="sos-link-btn">🆘 Записать тягу</button>'
@@ -1467,17 +1584,18 @@ journal(el, data) {
 
     el.innerHTML = '<div class="screen">'
       + '<h2 style="font-size:22px;font-weight:800;margin-bottom:14px">📔 Дневник</h2>'
-      + '<div style="display:flex;gap:8px;margin-bottom:16px">'
+      + '<div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px">'
       + '<button class="chip _tab'+(activeTab===0?' on':'')+'" data-t="0">Триггеры</button>'
-      + '<button class="chip _tab'+(activeTab===1?' on':'')+'" data-t="1">Ценности</button>'
+      + '<button class="chip _tab'+(activeTab===1?' on':'')+'" data-t="1">Дни</button>'
+      + '<button class="chip _tab'+(activeTab===2?' on':'')+'" data-t="2">Ценности</button>'
       + '</div>'
-      + (activeTab===0 ? triggersContent : valuesContent)
+      + (activeTab===0 ? triggersContent : activeTab===1 ? buildDailyLog() : valuesContent)
       + '</div>';
 
     document.querySelectorAll('._tab').forEach(function(b){
       b.onclick=function(){render(+b.dataset.t);};
     });
-    if(activeTab===0){
+    if (activeTab===0) {
       var sosBtn=document.getElementById('sos-link-btn');
       if(sosBtn) sosBtn.onclick=function(){App.navigate('urge-help');};
       document.querySelectorAll('._jf').forEach(function(b){
@@ -1490,7 +1608,7 @@ journal(el, data) {
         };
       });
     }
-    if(activeTab===1){
+    if (activeTab===2) {
       var addBtn=document.getElementById('vj-add-btn');
       var form=document.getElementById('vj-form');
       if(addBtn&&form) addBtn.onclick=function(){form.style.display='block';addBtn.style.display='none';};
@@ -1503,7 +1621,7 @@ journal(el, data) {
         Storage.addValuesEntry({type:'action',text:inp.value.trim(),valueId:'general'});
         Toast.show('✅ Записано','success');
         valuesJournal=Storage.get().valuesJournal||[];
-        render(1);
+        render(2);
       };
     }
   }
