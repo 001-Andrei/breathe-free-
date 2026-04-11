@@ -402,18 +402,18 @@ home(el, data) {
     + '<button class="btn-sos" onclick="App.navigate(\'urge-help\')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
     // ── Quick links ──
     + '<div style="display:flex;gap:10px;margin-bottom:10px">'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;flex:1;min-width:0;display:flex;flex-direction:column" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
+    + '<div class="card card-sm" role="button" style="text-align:left;cursor:pointer;flex:1;min-width:0;display:flex;flex-direction:column" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
     + '<div style="font-size:22px;margin-bottom:6px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
     + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Уровень ' + lvlNum + '</div>'
     + '<div style="color:var(--text2);font-size:14px;margin-bottom:auto;padding-bottom:8px">' + doneCount + '/' + totalEx + ' упр.</div>'
     + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.round(doneCount/totalEx*100) + '%"></div></div>'
-    + '</button>'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;flex:1;min-width:0;display:flex;flex-direction:column" onclick="App.navigate(\'tracker\')">'
+    + '</div>'
+    + '<div class="card card-sm" role="button" style="text-align:left;cursor:pointer;flex:1;min-width:0;display:flex;flex-direction:column" onclick="App.navigate(\'tracker\')">'
     + '<div style="font-size:22px;margin-bottom:6px">📊</div>'
     + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Трекер дня</div>'
     + '<div style="color:var(--text2);font-size:14px;margin-bottom:auto;padding-bottom:8px">Сегодня: <b style="color:var(--text)">' + todayLog.puffs + '</b> стиков</div>'
     + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.min(100, Math.round((todayLog.puffs / Math.max(1,u.dailyPuffs||20)) * 100)) + '%;background:' + (todayLog.puffs===0 ? 'linear-gradient(90deg,var(--green),#3DA870)' : 'linear-gradient(90deg,var(--blue),#4B8EEF)') + '"></div></div>'
-    + '</button></div>'
+    + '</div></div>'
     // ── Stats (кликабельные) ──
     + '<div class="stats-grid" style="margin-bottom:10px">'
     + '<div class="stat-card" onclick="App.navigate(\'savings\')">'
@@ -967,9 +967,9 @@ urgeHelp(el, data) {
         + '<div style="text-align:center;padding:16px 0 12px"><div style="font-size:48px">🆘</div>'
         + '<h2 style="font-size:24px;font-weight:800;margin-top:8px">Помощь при тяге</h2>'
         + '<p style="color:var(--text2);font-size:15px;margin-top:6px">Что ты сейчас чувствуешь?</p></div>'
-        + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;grid-auto-rows:1fr">'
+        + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
         + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','"Мне нужна затяжка"'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
-            return '<div class="card" style="text-align:center;cursor:pointer;padding:16px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:30px">'+t[1]+'</div><div style="font-weight:700">'+t[2]+'</div><div style="color:var(--text2);font-size:12px">'+t[3]+'</div></div>';
+            return '<div class="card" style="text-align:center;cursor:pointer;padding:20px 12px;min-height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:32px">'+t[1]+'</div><div style="font-weight:700;font-size:16px">'+t[2]+'</div><div style="color:var(--text2);font-size:13px">'+t[3]+'</div></div>';
           }).join('')
         + '</div>'
         + '<div style="padding:16px"><button class="btn-secondary" onclick="App.navigate(\'home\')">← Назад</button></div></div>';
