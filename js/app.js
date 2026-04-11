@@ -401,17 +401,17 @@ home(el, data) {
     // ── SOS ──
     + '<button class="btn-sos" onclick="App.navigate(\'urge-help\')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
     // ── Quick links ──
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;grid-auto-rows:1fr">'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%;display:flex;flex-direction:column" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;grid-auto-rows:1fr;align-items:stretch">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%;height:100%;display:flex;flex-direction:column" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
     + '<div style="font-size:22px;margin-bottom:6px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
-    + '<div style="font-weight:700;font-size:14px;margin-bottom:2px">Уровень ' + lvlNum + '</div>'
-    + '<div style="color:var(--text2);font-size:12px;margin-bottom:auto;padding-bottom:8px">' + doneCount + '/' + totalEx + ' упр.</div>'
+    + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Уровень ' + lvlNum + '</div>'
+    + '<div style="color:var(--text2);font-size:14px;margin-bottom:auto;padding-bottom:8px">' + doneCount + '/' + totalEx + ' упр.</div>'
     + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.round(doneCount/totalEx*100) + '%"></div></div>'
     + '</button>'
-    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%;display:flex;flex-direction:column" onclick="App.navigate(\'tracker\')">'
+    + '<button class="card card-sm" style="border:none;text-align:left;cursor:pointer;width:100%;height:100%;display:flex;flex-direction:column" onclick="App.navigate(\'tracker\')">'
     + '<div style="font-size:22px;margin-bottom:6px">📊</div>'
-    + '<div style="font-weight:700;font-size:14px;margin-bottom:2px">Трекер дня</div>'
-    + '<div style="color:var(--text2);font-size:12px;margin-bottom:auto;padding-bottom:8px">Сегодня: <b style="color:var(--text)">' + todayLog.puffs + '</b> стиков</div>'
+    + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Трекер дня</div>'
+    + '<div style="color:var(--text2);font-size:14px;margin-bottom:auto;padding-bottom:8px">Сегодня: <b style="color:var(--text)">' + todayLog.puffs + '</b> стиков</div>'
     + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.min(100, Math.round((todayLog.puffs / Math.max(1,u.dailyPuffs||20)) * 100)) + '%;background:' + (todayLog.puffs===0 ? 'linear-gradient(90deg,var(--green),#3DA870)' : 'linear-gradient(90deg,var(--blue),#4B8EEF)') + '"></div></div>'
     + '</button></div>'
     // ── Stats (кликабельные) ──
@@ -426,15 +426,35 @@ home(el, data) {
     + '<div class="stat-val" style="color:var(--orange)">' + p.achievements.length + '/' + ACHIEVEMENTS.length + '</div>'
     + '<div class="stat-label">Достижений →</div></div>'
     + '<div class="stat-card" onclick="App.navigate(\'health\')">'
-    + '<div class="stat-val" style="color:var(--purple);font-size:16px">'
-    + (healthNext ? fmtMins(healthNext.mins - daysSinceQuit*1440) : '✓ год!') + '</div>'
-    + '<div class="stat-label">До вехи здоровья →</div></div>'
+    + '<div class="stat-val" id="health-countdown" style="color:var(--purple);font-size:15px;font-variant-numeric:tabular-nums">'
+    + (healthNext && u.quitDate ? fmtMins(healthNext.mins - daysSinceQuit*1440) : '✓ год!') + '</div>'
+    + '<div class="stat-label">'+(healthNext ? healthNext.icon+' '+healthNext.title+' →' : 'Все вехи пройдены →')+'</div></div>'
     + '</div>'
     // ── Quote ──
     + '<div class="card" style="background:var(--green-light);border-color:rgba(34,197,94,.25)">'
     + '<div style="font-size:14px;color:#166534;line-height:1.6;text-align:center;font-style:italic">«'
     + QUOTES[Math.floor(Date.now()/600000) % QUOTES.length] + '»</div></div>'
     + '</div>';
+
+  // Live countdown to next health milestone
+  clearInterval(window._healthTimer);
+  if (healthNext && u.quitDate) {
+    var quitMs = new Date(u.quitDate).getTime();
+    var targetMs = quitMs + healthNext.mins * 60 * 1000;
+    function _tickHealth() {
+      var cdEl = document.getElementById('health-countdown');
+      if (!cdEl) { clearInterval(window._healthTimer); return; }
+      var rem = Math.max(0, Math.floor((targetMs - Date.now()) / 1000));
+      if (rem === 0) { cdEl.textContent = '✓ Достигнуто!'; clearInterval(window._healthTimer); return; }
+      var d = Math.floor(rem / 86400);
+      var h = Math.floor((rem % 86400) / 3600);
+      var m = Math.floor((rem % 3600) / 60);
+      var s = rem % 60;
+      cdEl.textContent = (d > 0 ? d + 'д ' : '') + ('0'+h).slice(-2) + ':' + ('0'+m).slice(-2) + ':' + ('0'+s).slice(-2);
+    }
+    _tickHealth();
+    window._healthTimer = setInterval(_tickHealth, 1000);
+  }
 },
 
 
