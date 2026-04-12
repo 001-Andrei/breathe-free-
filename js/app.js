@@ -1744,3 +1744,21 @@ settings(el, data) {
   };
 }
 }; // end Screens
+
+// ═══ SERVICE WORKER — автообновления без потери данных ═══
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+
+  // Слушаем сообщение от SW: пришло обновление → перезагружаем страницу
+  // localStorage (прогресс, дневник, настройки) не трогается — он отдельно от кеша
+  navigator.serviceWorker.addEventListener('message', function(evt) {
+    if (evt.data && evt.data.type === 'SW_UPDATED') {
+      Toast.show('✨ Обновление установлено, перезапускаем...', 'success');
+      setTimeout(function() { window.location.reload(); }, 1500);
+    }
+  });
+
+  navigator.serviceWorker.register('./sw.js').catch(function(err) {
+    console.warn('SW registration failed:', err);
+  });
+})();
