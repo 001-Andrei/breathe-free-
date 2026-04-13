@@ -421,7 +421,7 @@ home(el, data) {
     + '<div class="stat-label">Сэкономлено →</div></div>'
     + '<div class="stat-card">'
     + '<div class="stat-val" style="color:var(--accent)">' + (p.totalPuffsAvoided||0).toLocaleString() + '</div>'
-    + '<div class="stat-label">Стиков не выкурено</div></div>'
+    + '<div class="stat-label">' + (isPrepPhase ? 'Ниже нормы, стиков' : 'Не выкурено, стиков') + '</div></div>'
     + '<div class="stat-card" onclick="App.navigate(\'achievements\')">'
     + '<div class="stat-val" style="color:var(--orange)">' + p.achievements.length + '/' + ACHIEVEMENTS.length + '</div>'
     + '<div class="stat-label">Достижений →</div></div>'

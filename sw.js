@@ -1,6 +1,6 @@
 // Дыши Свободно — Service Worker
 // ⚠️  Обновляй CACHE_VERSION при каждом деплое — это сигнал браузеру загрузить новую версию
-const CACHE_VERSION = '2026-04-12-1';
+const CACHE_VERSION = '2026-04-13-1';
 const CACHE_NAME = 'breathe-free-' + CACHE_VERSION;
 
 const ASSETS = [
