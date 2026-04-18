@@ -369,7 +369,23 @@ home(el, data) {
   var nextEx = curLvl ? curLvl.exercises.find(function(e){return !doneEx.includes(e.id);}) : null;
   // Status ring
   var overallProg = Math.round((p.exercisesCompleted.length / (LEVELS.reduce(function(s,l){return s+l.exercises.length;},0))) * 100);
-  var healthNext = HEALTH.find(function(h){ return daysSinceQuit*1440 < h.mins; });
+  var lastSmokeMs = (function() {
+    var base = quitDate ? quitDate.getTime() : now.getTime();
+    Object.keys(logs).sort().forEach(function(dateKey) {
+      var log = logs[dateKey];
+      if (!log || log.puffs <= 0) return;
+      if (log.stickLog && log.stickLog.length > 0) {
+        var t = new Date(log.stickLog[log.stickLog.length-1].time).getTime();
+        if (t > base) base = t;
+      } else {
+        var approx = new Date(dateKey + 'T12:00:00').getTime();
+        if (approx > base && approx < now.getTime()) base = approx;
+      }
+    });
+    return base;
+  })();
+  var minsSmokeFree = (now.getTime() - lastSmokeMs) / 60000;
+  var healthNext = HEALTH.find(function(h){ return minsSmokeFree < h.mins; });
 
   el.innerHTML = '<div class="screen">'
     // ── Hero ──
@@ -427,8 +443,8 @@ home(el, data) {
     + '<div class="stat-label">Достижений →</div></div>'
     + '<div class="stat-card" onclick="App.navigate(\'health\')">'
     + '<div class="stat-val" id="health-countdown" style="color:var(--purple);font-size:15px;font-variant-numeric:tabular-nums">'
-    + (healthNext && u.quitDate ? fmtMins(healthNext.mins - daysSinceQuit*1440) : '✓ год!') + '</div>'
-    + '<div class="stat-label">'+(healthNext ? healthNext.icon+' '+healthNext.title+' →' : 'Все вехи пройдены →')+'</div></div>'
+    + (healthNext ? fmtMins(Math.max(0, healthNext.mins - minsSmokeFree)) : '✓ год!') + '</div>'
+    + '<div class="stat-label" id="health-label">'+(healthNext ? healthNext.icon+' '+healthNext.title+' →' : 'Все вехи пройдены →')+'</div></div>'
     + '</div>'
     // ── Quote ──
     + '<div class="card" style="background:var(--green-light);border-color:rgba(34,197,94,.25)">'
@@ -436,16 +452,25 @@ home(el, data) {
     + QUOTES[Math.floor(Date.now()/600000) % QUOTES.length] + '»</div></div>'
     + '</div>';
 
-  // Live countdown to next health milestone
+  // Live countdown to next health milestone — auto-advances, resets on smoke
   clearInterval(window._healthTimer);
-  if (healthNext && u.quitDate) {
-    var quitMs = new Date(u.quitDate).getTime();
-    var targetMs = quitMs + healthNext.mins * 60 * 1000;
+  (function() {
+    var _base = lastSmokeMs;
     function _tickHealth() {
       var cdEl = document.getElementById('health-countdown');
+      var lblEl = document.getElementById('health-label');
       if (!cdEl) { clearInterval(window._healthTimer); return; }
+      var elapsedMins = (Date.now() - _base) / 60000;
+      var next = HEALTH.find(function(h) { return elapsedMins < h.mins; });
+      if (!next) {
+        cdEl.textContent = '✓ год!';
+        if (lblEl) lblEl.textContent = 'Все вехи пройдены →';
+        clearInterval(window._healthTimer);
+        return;
+      }
+      if (lblEl) lblEl.innerHTML = next.icon + ' ' + next.title + ' →';
+      var targetMs = _base + next.mins * 60 * 1000;
       var rem = Math.max(0, Math.floor((targetMs - Date.now()) / 1000));
-      if (rem === 0) { cdEl.textContent = '✓ Достигнуто!'; clearInterval(window._healthTimer); return; }
       var d = Math.floor(rem / 86400);
       var h = Math.floor((rem % 86400) / 3600);
       var m = Math.floor((rem % 3600) / 60);
@@ -454,7 +479,7 @@ home(el, data) {
     }
     _tickHealth();
     window._healthTimer = setInterval(_tickHealth, 1000);
-  }
+  })();
 },
 
 
