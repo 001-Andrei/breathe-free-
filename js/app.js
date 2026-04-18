@@ -159,6 +159,162 @@ function confetti(elId) {
   }
 }
 
+// ═══ AI СОВЕТНИК ═══
+var AI_SYSTEM_PROMPT = 'Ты заботливый персональный советник по отказу от курения в приложении «Дыши Свободно».\n'
+  + 'Ты используешь подход ACT (Терапия принятия и ответственности).\n\n'
+  + 'Правила:\n'
+  + '- Пиши на русском, 3-4 предложения максимум\n'
+  + '- Никаких приветствий, подписей, заголовков — только сам совет\n'
+  + '- Опирайся ТОЛЬКО на данные пользователя (паттерны, время, причины, настроение)\n'
+  + '- Если вчера был срыв — поддержи, не осуди, предложи конкретное действие\n'
+  + '- Связывай совет с ценностями пользователя когда уместно\n'
+  + '- Называй пользователя по имени\n'
+  + '- Будь конкретным: «сегодня вечером попробуй X» лучше чем «нужно стараться»';
+
+var AI_SOS_PROMPT = 'Ты заботливый советник по отказу от курения. Пользователь только что прошёл сессию с тягой.\n'
+  + 'Дай один конкретный совет (2-3 предложения) на основе данных — что поможет в следующий раз при таком типе тяги.\n'
+  + 'Без приветствий, без заголовков. Только совет. На русском.';
+
+function buildAdviceContext(data) {
+  var u = data.user, p = data.progress, logs = data.dailyLogs || {};
+  var now = new Date();
+  var quitDate = u.quitDate ? new Date(u.quitDate) : null;
+  var daysSinceQuit = quitDate ? Math.max(0, Math.floor((now - quitDate) / 86400000)) : 0;
+  var moodLabels = ['😢','😕','😐','🙂','😄'];
+  var last7 = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(now); d.setDate(d.getDate() - i);
+    var key = d.toISOString().split('T')[0];
+    var log = logs[key];
+    if (log) last7.push({
+      дата: key, стиков: log.puffs,
+      настроение: moodLabels[Math.max(0,Math.min(4,(log.mood||3)-1))],
+      заметка: log.note || '',
+      причины: (log.stickLog||[]).map(function(s){return s.note;}).filter(Boolean)
+    });
+  }
+  var healthNext = typeof HEALTH !== 'undefined'
+    ? HEALTH.find(function(h){ return quitDate && (now-quitDate)/60000 < h.mins; }) : null;
+  return 'Данные пользователя:\n' + JSON.stringify({
+    имя: u.name || 'Пользователь',
+    метод: u.quitMethod === 'cold' ? 'резкий отказ' : 'постепенное снижение',
+    дней_без_курения: daysSinceQuit,
+    серия_дней: p.consecutiveSmokeFree || 0,
+    норма_стиков: u.dailyPuffs || 20,
+    ценности: (u.values || []).join(', ') || 'не указаны',
+    уровень_программы: u.currentLevel || 1,
+    последние_7_дней: last7,
+    последние_тяги: (data.journal||[]).slice(0,5).map(function(c){
+      return {тип:c.type,интенсивность:c.intensity,результат:c.result,заметка:c.note||''};
+    }),
+    последние_заметки: (data.valuesJournal||[]).slice(0,3).map(function(v){return v.text;}),
+    следующая_веха: healthNext ? healthNext.icon+' '+healthNext.title : 'все пройдены',
+    сэкономлено_евро: (p.moneySaved||0).toFixed(0)
+  }, null, 2) + '\n\nДай персональный совет на сегодня.';
+}
+
+function fetchAIAdvice(apiKey, userContent, systemPrompt) {
+  var controller = new AbortController();
+  var timeout = setTimeout(function(){ controller.abort(); }, 12000);
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 250,
+      system: systemPrompt || AI_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userContent }]
+    }),
+    signal: controller.signal
+  }).then(function(res){ clearTimeout(timeout); return res.json(); })
+    .then(function(json){
+      if (json.error) throw new Error(json.error.message || 'API error');
+      return json.content && json.content[0] ? json.content[0].text : '';
+    });
+}
+
+function _aiErrMsg(err) {
+  var m = err.name === 'AbortError' ? 'Таймаут' : (err.message || 'Ошибка');
+  if (m.indexOf('401') !== -1 || m.toLowerCase().indexOf('auth') !== -1)
+    return 'Неверный API ключ — проверьте в настройках';
+  if (m.indexOf('429') !== -1) return 'Превышен лимит запросов, попробуйте позже';
+  return m;
+}
+
+function initAIAdvice(data) {
+  var aiCfg = data.aiAdvice || {};
+  var card = document.getElementById('ai-advice-card');
+  if (!card) return;
+  if (!aiCfg.apiKey) {
+    card.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px">🤖 ИИ-советник</div>'
+      + '<div style="font-size:14px;color:var(--text2)">Добавьте API ключ в '
+      + '<span style="color:var(--accent);cursor:pointer" onclick="App.navigate(\'settings\')">Настройках</span>'
+      + ', чтобы получать персональные советы.</div>';
+    return;
+  }
+  var todayKey = today();
+  if (aiCfg.date === todayKey && aiCfg.text) { _renderAdvice(card, aiCfg.text); return; }
+  card.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">🤖 ИИ-советник</div>'
+    + '<div class="ai-skeleton"></div><div class="ai-skeleton" style="width:75%"></div>'
+    + '<div class="ai-skeleton" style="width:55%"></div>';
+  fetchAIAdvice(aiCfg.apiKey, buildAdviceContext(data))
+    .then(function(text){ Storage.saveAIAdvice(todayKey, text); _renderAdvice(card, text); })
+    .catch(function(err){
+      card.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px">🤖 ИИ-советник</div>'
+        + '<div style="font-size:13px;color:var(--text3)">' + _aiErrMsg(err) + '</div>'
+        + '<button class="btn-secondary" style="margin-top:8px;font-size:13px" onclick="initAIAdvice(Storage.get()||Storage.init())">Повторить</button>';
+    });
+}
+
+function _renderAdvice(card, text) {
+  card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--text2)">🤖 ИИ-советник</div>'
+    + '<button onclick="Storage.saveAIAdvice(null,null);initAIAdvice(Storage.get()||Storage.init())"'
+    + ' style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">Обновить</button>'
+    + '</div>'
+    + '<div style="font-size:14px;line-height:1.65;color:var(--text)">' + text.replace(/</g,'&lt;').replace(/\n/g,'<br>') + '</div>';
+}
+
+function initSOSAdvice(data, urgeType, won) {
+  var card = document.getElementById('sos-advice-card');
+  if (!card) return;
+  var aiCfg = data.aiAdvice || {};
+  if (!aiCfg.apiKey) { card.style.display='none'; return; }
+  card.style.display = 'block';
+  var btn = document.getElementById('sos-advice-btn');
+  var todayKey = today();
+  if (aiCfg.sosDate === todayKey && aiCfg.sosText) {
+    _renderSOSAdvice(card, aiCfg.sosText); return;
+  }
+  if (btn) btn.onclick = function() {
+    btn.style.display = 'none';
+    var spinner = document.createElement('div');
+    spinner.className = 'ai-skeleton'; spinner.style.marginTop = '8px';
+    card.appendChild(spinner);
+    var ctx = 'Тип тяги: ' + urgeType + '\nРезультат: ' + (won ? 'справился' : 'не справился')
+      + '\nДанные пользователя:\n' + JSON.stringify({
+        имя: data.user.name||'Пользователь',
+        дней_без_курения: data.user.quitDate ? Math.max(0,Math.floor((Date.now()-new Date(data.user.quitDate))/86400000)) : 0,
+        последние_тяги: (data.journal||[]).slice(0,5).map(function(c){
+          return {тип:c.type,результат:c.result,заметка:c.note||''};
+        })
+      });
+    fetchAIAdvice(aiCfg.apiKey, ctx, AI_SOS_PROMPT)
+      .then(function(text){ Storage.saveSosAdvice(todayKey,text); _renderSOSAdvice(card,text); })
+      .catch(function(err){ spinner.remove(); btn.style.display='block'; Toast.show(_aiErrMsg(err),'warn'); });
+  };
+}
+
+function _renderSOSAdvice(card, text) {
+  card.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px">🤖 Совет ИИ</div>'
+    + '<div style="font-size:14px;line-height:1.65;color:var(--text)">' + text.replace(/</g,'&lt;').replace(/\n/g,'<br>') + '</div>';
+}
+
 document.addEventListener('DOMContentLoaded', function() { App.init(); });
 
 // ═══ NAV BAR HELPER ═══
@@ -446,6 +602,8 @@ home(el, data) {
     + (healthNext ? fmtMins(Math.max(0, healthNext.mins - minsSmokeFree)) : '✓ год!') + '</div>'
     + '<div class="stat-label" id="health-label">'+(healthNext ? healthNext.icon+' '+healthNext.title+' →' : 'Все вехи пройдены →')+'</div></div>'
     + '</div>'
+    // ── AI Advice ──
+    + '<div class="card ai-advice-card" id="ai-advice-card" style="margin-bottom:10px"></div>'
     // ── Quote ──
     + '<div class="card" style="background:var(--green-light);border-color:rgba(34,197,94,.25)">'
     + '<div style="font-size:14px;color:#166534;line-height:1.6;text-align:center;font-style:italic">«'
@@ -480,6 +638,8 @@ home(el, data) {
     _tickHealth();
     window._healthTimer = setInterval(_tickHealth, 1000);
   })();
+
+  initAIAdvice(data);
 },
 
 
@@ -1110,9 +1270,13 @@ urgeHelp(el, data) {
       Storage.addJournalEntry({type:urgeType, intensity:window._sosInt||5, result:won?'won':'used', note:window._sosNote||''});
       el.innerHTML = '<div class="screen screen-full" style="text-align:center;padding-top:60px">'
         + (won
-          ? '<div style="font-size:64px;margin-bottom:16px">🎉</div><h2 style="font-size:26px;font-weight:800;margin-bottom:10px">Ты справился!</h2><p style="color:var(--text2);font-size:16px;line-height:1.6;margin-bottom:32px">Каждая победа над тягой укрепляет новую нейронную связь.<br>Ты становишься свободнее.</p>'
-          : '<div style="font-size:64px;margin-bottom:16px">💚</div><h2 style="font-size:24px;font-weight:800;margin-bottom:10px">Это не провал</h2><p style="color:var(--text2);font-size:15px;line-height:1.6;margin-bottom:32px">Один момент не определяет твой путь.<br>Важно не то, что ты упал, а то, что ты поднимаешься.</p>')
+          ? '<div style="font-size:64px;margin-bottom:16px">🎉</div><h2 style="font-size:26px;font-weight:800;margin-bottom:10px">Ты справился!</h2><p style="color:var(--text2);font-size:16px;line-height:1.6;margin-bottom:24px">Каждая победа над тягой укрепляет новую нейронную связь.<br>Ты становишься свободнее.</p>'
+          : '<div style="font-size:64px;margin-bottom:16px">💚</div><h2 style="font-size:24px;font-weight:800;margin-bottom:10px">Это не провал</h2><p style="color:var(--text2);font-size:15px;line-height:1.6;margin-bottom:24px">Один момент не определяет твой путь.<br>Важно не то, что ты упал, а то, что ты поднимаешься.</p>')
+        + '<div id="sos-advice-card" class="card ai-advice-card" style="text-align:left;margin-bottom:16px;display:none">'
+        + '<button id="sos-advice-btn" class="btn-secondary" style="width:100%;font-size:14px">🤖 Что поможет в следующий раз?</button>'
+        + '</div>'
         + '<button class="btn-primary" onclick="App.navigate(\'home\')">← На главную</button></div>';
+      setTimeout(function(){ initSOSAdvice(Storage.get()||Storage.init(), urgeType, won); }, 0);
     }
   }
   render(0);
@@ -1711,6 +1875,12 @@ settings(el, data) {
     + '<div class="input-group" style="margin:0"><label class="input-label">ВРЕМЯ</label><input class="input" id="s-rtime" type="time" value="'+(s.reminderTime||'20:00')+'"></div>'
     + '<div style="font-size:12px;color:var(--text3);margin-top:8px">Работает, когда приложение открывается в течение дня (iOS PWA имеет ограничения).</div>'
     + '</div>'
+    + '<div class="card" style="margin-bottom:12px">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">ИИ-СОВЕТНИК</div>'
+    + '<div class="input-group"><label class="input-label">ANTHROPIC API KEY</label>'
+    + '<input class="input" id="s-apikey" type="password" placeholder="sk-ant-..." value="' + ((data.aiAdvice||{}).apiKey||'') + '"></div>'
+    + '<div style="font-size:12px;color:var(--text3);margin-top:4px">Ключ хранится только на вашем устройстве. Получить: <b>console.anthropic.com</b></div>'
+    + '</div>'
     + '<button class="btn-primary" style="margin-bottom:10px" onclick="window._saveSettings()">💾 Сохранить</button>'
     + '<button class="btn-secondary" style="margin-bottom:10px" onclick="window._exportData()">⬇️ Экспорт данных (JSON)</button>'
     + '<button class="btn-secondary" style="margin-bottom:10px" onclick="App.navigate(\'achievements\')">🏆 Достижения</button>'
@@ -1747,6 +1917,8 @@ settings(el, data) {
         }
       });
     }
+    var apiKey = (document.getElementById('s-apikey')||{}).value || '';
+    Storage.saveAIKey(apiKey.trim());
     Toast.show('✅ Сохранено','success');
   };
   window._exportData=function(){
