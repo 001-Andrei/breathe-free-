@@ -502,3 +502,14 @@ input[type=range] {
 @keyframes wavePeak { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.4)} }
 @keyframes shimmer  { 0%{opacity:.6} 50%{opacity:1} 100%{opacity:.6} }
 .hd { display:none !important; }
+
+/* ═══ AI СОВЕТНИК ═══ */
+.ai-advice-card { border-left: 3px solid var(--purple); }
+.ai-skeleton {
+  height: 14px;
+  border-radius: 7px;
+  background: rgba(168,85,247,.15);
+  margin-bottom: 8px;
+  animation: aiPulse 1.4s ease-in-out infinite;
+}
+@keyframes aiPulse { 0%,100%{opacity:.5} 50%{opacity:1} }
