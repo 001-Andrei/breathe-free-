@@ -37,7 +37,8 @@ const Storage = {
       dailyLogs: {},
       journal: [],
       valuesJournal: [],
-      settings: { notifications: false, reminderTime: '20:00' }
+      settings: { notifications: false, reminderTime: '20:00' },
+      aiAdvice: { apiKey: '', date: null, text: null, sosDate: null, sosText: null }
     };
     this.save(fresh);
     return fresh;
@@ -185,6 +186,29 @@ const Storage = {
     }
     if (newOnes.length) this.save(d);
     return newOnes;
+  },
+
+  saveAIKey(key) {
+    const d = this.get() || this.init();
+    if (!d.aiAdvice) d.aiAdvice = { apiKey: '', date: null, text: null, sosDate: null, sosText: null };
+    d.aiAdvice.apiKey = key;
+    this.save(d);
+  },
+
+  saveAIAdvice(date, text) {
+    const d = this.get() || this.init();
+    if (!d.aiAdvice) d.aiAdvice = { apiKey: '', date: null, text: null, sosDate: null, sosText: null };
+    d.aiAdvice.date = date;
+    d.aiAdvice.text = text;
+    this.save(d);
+  },
+
+  saveSosAdvice(date, text) {
+    const d = this.get() || this.init();
+    if (!d.aiAdvice) d.aiAdvice = { apiKey: '', date: null, text: null, sosDate: null, sosText: null };
+    d.aiAdvice.sosDate = date;
+    d.aiAdvice.sosText = text;
+    this.save(d);
   },
 
   reset() {
