@@ -213,7 +213,9 @@ input:focus,textarea:focus,select:focus { outline:none; }
   display: flex;
   flex-direction: column;
   min-height: 126px;
+  margin: 0;
 }
+.card + .tile-card { margin-top: 0; }
 
 .tile-card-meta {
   color: var(--text2);
@@ -232,7 +234,9 @@ input:focus,textarea:focus,select:focus { outline:none; }
   align-items: center;
   justify-content: center;
   gap: 8px;
+  margin: 0;
 }
+.card + .urge-type-card { margin-top: 0; }
 
 /* ═══ BUTTONS ═══ */
 .btn-primary {
