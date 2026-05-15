@@ -162,12 +162,34 @@ const Storage = {
         }
       });
     }
-    // Money saved — based on actual unsmoked sticks × price per stick
+    // Money saved — unsmoked sticks × price per stick
+    // After quitDate: unlogged day = fully smoke-free (assumed)
+    // Before quitDate: only count from logged days
     const u = d.user;
     if (u.dailyPuffs) {
-      const sticksSaved = Object.values(logs).reduce((s, l) => s + Math.max(0, u.dailyPuffs - l.puffs), 0);
-      d.progress.totalPuffsAvoided = sticksSaved;
       const pricePerStick = (u.packPrice || 6.50) / (u.packSize || u.dailyPuffs || 20);
+      const qd = u.quitDate ? new Date(u.quitDate.split('T')[0]) : null;
+      let sticksSaved = 0;
+
+      if (qd) {
+        const nowDay = new Date(new Date().toISOString().split('T')[0]);
+        for (let cur = new Date(qd); cur <= nowDay; cur.setDate(cur.getDate() + 1)) {
+          const key = cur.toISOString().split('T')[0];
+          const log = logs[key];
+          sticksSaved += log ? Math.max(0, u.dailyPuffs - log.puffs) : u.dailyPuffs;
+        }
+        // also count logged pre-quit days where user was below baseline
+        Object.keys(logs).forEach(function(k) {
+          if (k < u.quitDate.split('T')[0]) {
+            sticksSaved += Math.max(0, u.dailyPuffs - logs[k].puffs);
+          }
+        });
+      } else {
+        // No quit date set — only count explicitly logged days
+        sticksSaved = Object.values(logs).reduce((s, l) => s + Math.max(0, u.dailyPuffs - l.puffs), 0);
+      }
+
+      d.progress.totalPuffsAvoided = sticksSaved;
       d.progress.moneySaved = Math.round(sticksSaved * pricePerStick * 100) / 100;
     }
   },
