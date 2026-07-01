@@ -408,8 +408,8 @@ welcome(el, data) {
       + (draft.quitMethod==='gradual'
         ? '<div class="input-group"><label class="input-label">ДАТА НАЧАЛА СНИЖЕНИЯ</label><input class="input" id="inp-grad-start" type="date" value="'+((draft.gradualStartDate||minStr).split('T')[0])+'" min="'+minStr+'"></div>'
         : '')
-      + '<div class="card" style="background:var(--green-light);border-color:rgba(34,197,94,.25);margin-bottom:24px">'
-      + '<div style="color:#166534;font-size:14px">💡 Рекомендуем через 7 дней — используй время для прохождения уровней 1–4.</div></div>'
+      + '<div class="card" style="background:var(--green-light);border-color:rgba(31,157,107,.25);margin-bottom:24px">'
+      + '<div style="color:var(--accent2);font-size:14px">💡 Рекомендуем через 7 дней — используй время для прохождения уровней 1–4.</div></div>'
       + '<button class="btn-primary" onclick="window._ws(4)">Продолжить →</button>';
   }
   function s4() {
@@ -523,8 +523,6 @@ home(el, data) {
   var doneCount = doneEx.filter(function(e){return e.startsWith(lvlNum+'.');}).length;
   var totalEx = curLvl ? curLvl.exercises.length : 4;
   var nextEx = curLvl ? curLvl.exercises.find(function(e){return !doneEx.includes(e.id);}) : null;
-  // Status ring
-  var overallProg = Math.round((p.exercisesCompleted.length / (LEVELS.reduce(function(s,l){return s+l.exercises.length;},0))) * 100);
   var lastSmokeMs = (function() {
     var base = quitDate ? quitDate.getTime() : now.getTime();
     Object.keys(logs).sort().forEach(function(dateKey) {
@@ -543,70 +541,112 @@ home(el, data) {
   var minsSmokeFree = (now.getTime() - lastSmokeMs) / 60000;
   var healthNext = HEALTH.find(function(h){ return minsSmokeFree < h.mins; });
 
+  function wordDays(n) { return n===1?'день':(n>=2&&n<=4)?'дня':'дней'; }
+
+  // Greeting by time of day
+  var hour = now.getHours();
+  var greeting = hour<6 ? 'Доброй ночи' : hour<12 ? 'Доброе утро' : hour<18 ? 'Добрый день' : 'Добрый вечер';
+  var greetIcon = hour<6 ? '🌙' : hour<12 ? '🌿' : hour<18 ? '☀️' : '🌆';
+
+  // Ring: progress toward next streak milestone (or prep-phase progress)
+  var STREAK_GOALS = [1,3,7,14,30,90,180,365];
+  var ringNumber, ringSub, ringPct, goalPillHtml;
+  if (isPrepPhase) {
+    ringNumber = daysToQuit;
+    ringSub = 'дней до отказа';
+    if (u.quitMethod === 'gradual' && u.gradualStartDate) {
+      var prepStart = new Date(u.gradualStartDate).getTime();
+      var prepTotal = quitDate.getTime() - prepStart;
+      ringPct = prepTotal > 0 ? Math.round(Math.min(100,Math.max(0,((now.getTime()-prepStart)/prepTotal)*100))) : 0;
+    } else {
+      ringPct = 0;
+    }
+    goalPillHtml = '';
+  } else {
+    ringNumber = daysSinceQuit;
+    ringSub = 'дней свободы';
+    var goalDays = STREAK_GOALS.find(function(g){ return streak < g; });
+    if (goalDays) {
+      var prevGoal = STREAK_GOALS[STREAK_GOALS.indexOf(goalDays)-1] || 0;
+      ringPct = Math.round(((streak-prevGoal)/(goalDays-prevGoal))*100);
+      var daysToGoal = goalDays - streak;
+      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:12px">🎯 до цели: ' + daysToGoal + ' ' + wordDays(daysToGoal) + '</div>';
+    } else {
+      ringPct = 100;
+      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:12px">🏆 Все цели по серии достигнуты</div>';
+    }
+  }
+  var ringCirc = 2 * Math.PI * 76;
+  var ringOffset = Math.round(ringCirc * (1 - ringPct/100));
+
   el.innerHTML = '<div class="screen">'
     // ── Hero ──
-    + '<div class="hero-card">'
-    + '<div style="font-size:12px;color:rgba(28,28,30,.55);font-weight:600;letter-spacing:.5px;margin-bottom:4px">ПРИВЕТ, ' + (u.name||'ДРУГ').toUpperCase() + '</div>'
-    + '<div style="font-size:26px;font-weight:700;line-height:1.2;margin-bottom:14px;letter-spacing:-.3px">'
-    + (isPrepPhase
-        ? '⏳ До дня X: <b>' + daysToQuit + '</b> ' + (daysToQuit===1?'день':daysToQuit<5?'дня':'дней')
-        : daysSinceQuit===0
-          ? '🌅 Сегодня — день отказа!'
-          : '🌿 День <b>' + daysSinceQuit + '</b> без стиков')
+    + '<div class="hero-card" style="text-align:center">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+    + '<div style="text-align:left">'
+    + '<div style="font-size:13px;color:var(--text2);font-weight:600">' + greetIcon + ' ' + greeting + '</div>'
+    + '<div style="font-size:20px;font-weight:800;margin-top:2px">' + (u.name||'Друг') + '</div>'
     + '</div>'
-    // mini progress ring + streak
-    + '<div style="display:flex;align-items:center;gap:16px">'
-    + '<div style="position:relative;width:60px;height:60px;flex-shrink:0">'
-    + '<svg width="60" height="60" viewBox="0 0 60 60" style="transform:rotate(-90deg)">'
-    + '<circle cx="30" cy="30" r="24" fill="none" stroke="rgba(0,0,0,.10)" stroke-width="5"/>'
-    + '<circle cx="30" cy="30" r="24" fill="none" stroke="url(#pg)" stroke-width="5" stroke-linecap="round" stroke-dasharray="151" stroke-dashoffset="' + Math.round(151*(1-overallProg/100)) + '">'
-    + '</circle>'
-    + '<defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#2AABEE"/><stop offset="100%" stop-color="#7B61FF"/></linearGradient></defs>'
+    + '<div style="background:var(--accent-light);color:var(--accent);font-weight:700;font-size:13px;padding:6px 12px;border-radius:16px;display:flex;align-items:center;gap:4px;white-space:nowrap">🔥 ' + streak + ' ' + wordDays(streak) + '</div>'
+    + '</div>'
+    + '<div style="position:relative;width:180px;height:180px;margin:16px auto 4px">'
+    + '<svg width="180" height="180" viewBox="0 0 180 180" style="transform:rotate(-90deg)">'
+    + '<circle cx="90" cy="90" r="76" fill="none" stroke="var(--accent-light)" stroke-width="12"/>'
+    + '<circle cx="90" cy="90" r="76" fill="none" stroke="url(#pg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + ringCirc + '" stroke-dashoffset="' + ringOffset + '"/>'
+    + '<defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#3fc88a"/><stop offset="100%" stop-color="#1f9d6b"/></linearGradient></defs>'
     + '</svg>'
-    + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent)">' + overallProg + '%</div>'
-    + '</div>'
-    + '<div style="flex:1">'
-    + '<div style="font-size:14px;font-weight:600">Прогресс программы</div>'
-    + '<div style="font-size:12px;color:var(--text2);margin-top:2px">Уровень ' + lvlNum + '/8 · ' + p.exercisesCompleted.length + ' упр. выполнено</div>'
-    + '<div style="font-size:13px;color:var(--green);font-weight:600;margin-top:5px">🔥 Серия: ' + streak + ' ' + (streak===1?'день':streak<5?'дня':'дней') + '</div>'
-    + '</div></div></div>'
-    // ── SOS ──
-    + '<button class="btn-sos" onclick="App.navigate(\'urge-help\')" style="margin-bottom:10px">🆘 Помощь при тяге — сейчас</button>'
-    // ── Quick links ──
-    + '<div style="display:flex;gap:10px;margin-bottom:10px">'
-    + '<div class="card card-sm tile-card" role="button" onclick="App.navigate(\'level\',{id:' + lvlNum + '})">'
-    + '<div style="font-size:22px;margin-bottom:6px">' + (curLvl?curLvl.emoji:'📚') + '</div>'
-    + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Уровень ' + lvlNum + '</div>'
-    + '<div class="tile-card-meta">' + doneCount + '/' + totalEx + ' упр.</div>'
-    + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.round(doneCount/totalEx*100) + '%"></div></div>'
-    + '</div>'
-    + '<div class="card card-sm tile-card" role="button" onclick="App.navigate(\'tracker\')">'
-    + '<div style="font-size:22px;margin-bottom:6px">📊</div>'
-    + '<div style="font-weight:700;font-size:16px;margin-bottom:4px">Трекер дня</div>'
-    + '<div class="tile-card-meta">Сегодня: <b style="color:var(--text)">' + todayLog.puffs + '</b> стиков</div>'
-    + '<div class="pbar"><div class="pbar-fill" style="width:' + Math.min(100, Math.round((todayLog.puffs / Math.max(1,u.dailyPuffs||20)) * 100)) + '%;background:' + (todayLog.puffs===0 ? 'linear-gradient(90deg,var(--green),#3DA870)' : 'linear-gradient(90deg,var(--blue),#4B8EEF)') + '"></div></div>'
+    + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
+    + '<div style="font-size:44px;font-weight:800;color:var(--text);line-height:1">' + ringNumber + '</div>'
+    + '<div style="font-size:13px;color:var(--text2);font-weight:500;margin-top:2px">' + ringSub + '</div>'
     + '</div></div>'
+    + goalPillHtml
+    + '<div style="margin-top:10px"><span role="button" onclick="App.navigate(\'achievements\')" style="font-size:13px;color:var(--text2);cursor:pointer">🏆 ' + p.achievements.length + '/' + ACHIEVEMENTS.length + ' достижений →</span></div>'
+    + '</div>'
     // ── Stats (кликабельные) ──
-    + '<div class="stats-grid" style="margin-bottom:10px">'
-    + '<div class="stat-card" onclick="App.navigate(\'savings\')">'
-    + '<div class="stat-val" style="color:var(--green)">€' + (p.moneySaved||0).toFixed(0) + '</div>'
-    + '<div class="stat-label">Сэкономлено →</div></div>'
-    + '<div class="stat-card">'
-    + '<div class="stat-val" style="color:var(--accent)">' + (p.totalPuffsAvoided||0).toLocaleString() + '</div>'
-    + '<div class="stat-label">' + (isPrepPhase ? 'Ниже нормы, стиков' : 'Не выкурено, стиков') + '</div></div>'
-    + '<div class="stat-card" onclick="App.navigate(\'achievements\')">'
-    + '<div class="stat-val" style="color:var(--orange)">' + p.achievements.length + '/' + ACHIEVEMENTS.length + '</div>'
-    + '<div class="stat-label">Достижений →</div></div>'
-    + '<div class="stat-card" onclick="App.navigate(\'health\')">'
-    + '<div class="stat-val" id="health-countdown" style="color:var(--purple);font-size:15px;font-variant-numeric:tabular-nums">'
-    + (healthNext ? fmtMins(Math.max(0, healthNext.mins - minsSmokeFree)) : '✓ год!') + '</div>'
-    + '<div class="stat-label" id="health-label">'+(healthNext ? healthNext.icon+' '+healthNext.title+' →' : 'Все вехи пройдены →')+'</div></div>'
+    + '<div style="display:flex;gap:10px;margin-bottom:10px">'
+    + '<div class="card card-sm tile-card" role="button" style="flex:1;text-align:center;min-height:0" onclick="App.navigate(\'savings\')">'
+    + '<div style="font-size:20px;font-weight:800;color:var(--accent)">€' + (p.moneySaved||0).toFixed(0) + '</div>'
+    + '<div style="font-size:13px;color:var(--text2);margin-top:2px">Сэкономлено →</div>'
+    + '</div>'
+    + '<div class="card card-sm tile-card" style="flex:1;text-align:center;min-height:0">'
+    + '<div style="font-size:20px;font-weight:800;color:var(--text)">' + (p.totalPuffsAvoided||0).toLocaleString() + '</div>'
+    + '<div style="font-size:13px;color:var(--text2);margin-top:2px">' + (isPrepPhase ? 'Ниже нормы, стиков' : 'Не выкурено, стиков') + '</div>'
+    + '</div></div>'
+    // ── Сегодняшняя практика (CTA) ──
+    + (nextEx
+        ? '<div class="card" role="button" style="background:var(--accent-grad);color:#fff;margin-bottom:10px;cursor:pointer" onclick="App.navigate(\'exercise\',{id:\'' + nextEx.id + '\'})">'
+          + '<div style="font-size:12px;font-weight:700;letter-spacing:.4px;opacity:.85;margin-bottom:6px">УРОВЕНЬ ' + lvlNum + ' · ' + doneCount + '/' + totalEx + ' УПР.</div>'
+          + '<div style="font-size:18px;font-weight:800;margin-bottom:12px">' + nextEx.emoji + ' ' + nextEx.title + '</div>'
+          + '<div style="background:rgba(255,255,255,.22);border-radius:12px;padding:12px;text-align:center;font-weight:700;font-size:15px">' + (doneCount>0?'Продолжить':'Начать') + ' практику →</div>'
+          + '</div>'
+        : '<div class="card" role="button" style="background:var(--accent-grad);color:#fff;margin-bottom:10px;cursor:pointer" onclick="App.navigate(\'levels\')">'
+          + '<div style="font-size:12px;font-weight:700;letter-spacing:.4px;opacity:.85;margin-bottom:6px">УРОВЕНЬ ' + lvlNum + ' ПРОЙДЕН</div>'
+          + '<div style="font-size:18px;font-weight:800;margin-bottom:12px">🎉 Все упражнения выполнены</div>'
+          + '<div style="background:rgba(255,255,255,.22);border-radius:12px;padding:12px;text-align:center;font-weight:700;font-size:15px">К списку уровней →</div>'
+          + '</div>')
+    // ── Трекер дня (компактная строка) ──
+    + '<div class="card card-sm tile-card" role="button" style="flex-direction:row;align-items:center;gap:12px;min-height:0;margin-bottom:10px" onclick="App.navigate(\'tracker\')">'
+    + '<div style="font-size:24px">📊</div>'
+    + '<div style="flex:1;text-align:left">'
+    + '<div style="font-weight:700;font-size:15px">Трекер дня</div>'
+    + '<div style="font-size:13px;color:var(--text2)">Сегодня: <b style="color:var(--text)">' + todayLog.puffs + '</b> стиков</div>'
+    + '</div>'
+    + '<div style="color:var(--text3);font-size:20px">›</div>'
+    + '</div>'
+    // ── Восстановление тела ──
+    + '<div class="card" style="margin-bottom:10px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    + '<div style="font-size:14px;font-weight:700">Восстановление тела</div>'
+    + '<div id="health-countdown" style="font-size:13px;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums"></div>'
+    + '</div>'
+    + '<div class="pbar" style="margin-bottom:8px"><div class="pbar-fill" id="health-pbar-fill" style="width:0%"></div></div>'
+    + '<div id="health-label" style="font-size:13px;color:var(--text2)"></div>'
     + '</div>'
     // ── AI Advice ──
     + '<div class="card ai-advice-card" id="ai-advice-card" style="margin-bottom:10px"></div>'
     // ── Quote ──
-    + '<div class="card" style="background:var(--green-light);border-color:rgba(34,197,94,.25)">'
-    + '<div style="font-size:14px;color:#166534;line-height:1.6;text-align:center;font-style:italic">«'
+    + '<div class="card" style="background:var(--green-light);border-color:rgba(31,157,107,.25)">'
+    + '<div style="font-size:14px;color:var(--accent2);line-height:1.6;text-align:center;font-style:italic">«'
     + QUOTES[Math.floor(Date.now()/600000) % QUOTES.length] + '»</div></div>'
     + '</div>';
 
@@ -617,16 +657,22 @@ home(el, data) {
     function _tickHealth() {
       var cdEl = document.getElementById('health-countdown');
       var lblEl = document.getElementById('health-label');
+      var fillEl = document.getElementById('health-pbar-fill');
       if (!cdEl) { clearInterval(window._healthTimer); return; }
       var elapsedMins = (Date.now() - _base) / 60000;
       var next = HEALTH.find(function(h) { return elapsedMins < h.mins; });
       if (!next) {
-        cdEl.textContent = '✓ год!';
-        if (lblEl) lblEl.textContent = 'Все вехи пройдены →';
+        cdEl.textContent = 'Готово ✓';
+        if (lblEl) lblEl.textContent = '🏆 Все вехи здоровья пройдены';
+        if (fillEl) fillEl.style.width = '100%';
         clearInterval(window._healthTimer);
         return;
       }
-      if (lblEl) lblEl.innerHTML = next.icon + ' ' + next.title + ' →';
+      var idx = HEALTH.indexOf(next);
+      var prevMins = idx > 0 ? HEALTH[idx-1].mins : 0;
+      var pct = Math.min(100, Math.max(0, Math.round(((elapsedMins - prevMins) / (next.mins - prevMins)) * 100)));
+      if (fillEl) fillEl.style.width = pct + '%';
+      if (lblEl) lblEl.innerHTML = next.icon + ' ' + next.title;
       var targetMs = _base + next.mins * 60 * 1000;
       var rem = Math.max(0, Math.floor((targetMs - Date.now()) / 1000));
       var d = Math.floor(rem / 86400);
@@ -1318,7 +1364,7 @@ tracker(el, data) {
       + '<div style="color:var(--text2);font-size:13px;margin-top:4px">'+(u.dailyPuffs?'из '+u.dailyPuffs+' стиков':'стиков')+'</div></div>'
       + '<button class="counter-btn" onclick="window._adj(1)">+</button>'
       + '</div>'
-      + (puffs===0?'<div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:12px;color:#166534;font-weight:700;text-align:center;font-size:15px" id="cday-msg">🎉 Чистый день!</div>':'')
+      + (puffs===0?'<div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:12px;color:var(--accent2);font-weight:700;text-align:center;font-size:15px" id="cday-msg">🎉 Чистый день!</div>':'')
       + (isGradual&&goalPuffs!==null?'<div class="pbar" style="margin-top:12px"><div class="pbar-fill" style="width:'+Math.max(0,Math.min(100,Math.round(((goalPuffs-puffs)/Math.max(1,goalPuffs))*100)))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' стиков</div>':'')
       + (showNoteInput
           ? '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">'
@@ -1616,7 +1662,7 @@ savings(el, data) {
           + '<div style="flex:1"><div style="font-weight:600">'+g.name+'</div><div style="color:var(--text2);font-size:13px">€'+g.price+'</div></div>'
           + '<div style="font-size:14px;font-weight:700;color:'+(pct>=100?'var(--green)':'var(--text3)')+'">'+pct+'%</div>'
           + '</div>'
-          + '<div class="pbar"><div class="pbar-fill" style="width:'+pct+'%;background:'+(pct>=100?'linear-gradient(90deg,var(--green),#3DA870)':'linear-gradient(90deg,var(--blue),#4B8EEF)')+'"></div></div>'
+          + '<div class="pbar"><div class="pbar-fill" style="width:'+pct+'%;background:'+(pct>=100?'linear-gradient(90deg,var(--accent),var(--accent2))':'linear-gradient(90deg,var(--blue),#1e8a94)')+'"></div></div>'
           + '</div>';
       }).join('');
   }
@@ -1715,7 +1761,7 @@ journal(el, data) {
         +'<div style="font-size:11px;color:var(--text3)">'+d.toLocaleDateString('ru')+' '+time+'</div></div>'
         +(j.intensity?'<div style="color:var(--text2);font-size:12px;margin-top:4px">Интенсивность: '+j.intensity+'/10</div>':'')
         +(j.note?'<div style="color:var(--text);font-size:13px;margin-top:6px;font-style:italic;line-height:1.4">«'+j.note+'»</div>':'')
-        +'<div style="font-size:12px;margin-top:6px;padding:3px 10px;border-radius:10px;display:inline-block;background:'+(j.result==='won'?'var(--green-light)':'var(--red-light)')+';color:'+(j.result==='won'?'#166534':'var(--red)')+';font-weight:600">'+(j.result==='won'?'✓ Справился':'Использовал')+'</div>'
+        +'<div style="font-size:12px;margin-top:6px;padding:3px 10px;border-radius:10px;display:inline-block;background:'+(j.result==='won'?'var(--green-light)':'var(--red-light)')+';color:'+(j.result==='won'?'var(--accent2)':'var(--red)')+';font-weight:600">'+(j.result==='won'?'✓ Справился':'Использовал')+'</div>'
         +'</div>';
     }).join('');
   }
