@@ -524,19 +524,18 @@ home(el, data) {
   var totalEx = curLvl ? curLvl.exercises.length : 4;
   var nextEx = curLvl ? curLvl.exercises.find(function(e){return !doneEx.includes(e.id);}) : null;
   var lastSmokeMs = (function() {
-    var base = quitDate ? quitDate.getTime() : now.getTime();
+    var latest = null;
     Object.keys(logs).sort().forEach(function(dateKey) {
       var log = logs[dateKey];
       if (!log || log.puffs <= 0) return;
-      if (log.stickLog && log.stickLog.length > 0) {
-        var t = new Date(log.stickLog[log.stickLog.length-1].time).getTime();
-        if (t > base) base = t;
-      } else {
-        var approx = new Date(dateKey + 'T12:00:00').getTime();
-        if (approx > base && approx < now.getTime()) base = approx;
-      }
+      var t = (log.stickLog && log.stickLog.length > 0)
+        ? new Date(log.stickLog[log.stickLog.length-1].time).getTime()
+        : new Date(dateKey + 'T12:00:00').getTime();
+      if (t < now.getTime() && (latest === null || t > latest)) latest = t;
     });
-    return base;
+    if (latest !== null) return latest;
+    if (quitDate && quitDate.getTime() <= now.getTime()) return quitDate.getTime();
+    return now.getTime();
   })();
   var minsSmokeFree = (now.getTime() - lastSmokeMs) / 60000;
   var healthNext = HEALTH.find(function(h){ return minsSmokeFree < h.mins; });
@@ -550,7 +549,7 @@ home(el, data) {
 
   // Ring: progress toward next streak milestone (or prep-phase progress)
   var STREAK_GOALS = [1,3,7,14,30,90,180,365];
-  var ringNumber, ringSub, ringPct, goalPillHtml;
+  var ringNumber, ringSub, ringPct, goalPillHtml, showLiveClock = false;
   if (isPrepPhase) {
     ringNumber = daysToQuit;
     ringSub = 'дней до отказа';
@@ -563,8 +562,7 @@ home(el, data) {
     }
     goalPillHtml = '';
   } else {
-    ringNumber = daysSinceQuit;
-    ringSub = 'дней свободы';
+    showLiveClock = true;
     var goalDays = STREAK_GOALS.find(function(g){ return streak < g; });
     if (goalDays) {
       var prevGoal = STREAK_GOALS[STREAK_GOALS.indexOf(goalDays)-1] || 0;
@@ -596,8 +594,12 @@ home(el, data) {
     + '<defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#3fc88a"/><stop offset="100%" stop-color="#1f9d6b"/></linearGradient></defs>'
     + '</svg>'
     + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
-    + '<div style="font-size:44px;font-weight:800;color:var(--text);line-height:1">' + ringNumber + '</div>'
-    + '<div style="font-size:13px;color:var(--text2);font-weight:500;margin-top:2px">' + ringSub + '</div>'
+    + (showLiveClock
+        ? '<div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:var(--text2);text-transform:uppercase">Без сигарет</div>'
+          + '<div id="live-clock" style="font-size:30px;font-weight:800;color:var(--text);line-height:1.25;margin-top:4px;font-variant-numeric:tabular-nums;white-space:nowrap">00:00:00</div>'
+          + '<div id="live-clock-days" style="font-size:13px;color:var(--accent2);font-weight:700;margin-top:4px"></div>'
+        : '<div style="font-size:44px;font-weight:800;color:var(--text);line-height:1">' + ringNumber + '</div>'
+          + '<div style="font-size:13px;color:var(--text2);font-weight:500;margin-top:2px">' + ringSub + '</div>')
     + '</div></div>'
     + goalPillHtml
     + '<div style="margin-top:10px"><span role="button" onclick="App.navigate(\'achievements\')" style="font-size:13px;color:var(--text2);cursor:pointer">🏆 ' + p.achievements.length + '/' + ACHIEVEMENTS.length + ' достижений →</span></div>'
@@ -650,10 +652,22 @@ home(el, data) {
     + QUOTES[Math.floor(Date.now()/600000) % QUOTES.length] + '»</div></div>'
     + '</div>';
 
-  // Live countdown to next health milestone — auto-advances, resets on smoke
+  // Live ticking: time-since-last-cigarette clock + health milestone countdown
   clearInterval(window._healthTimer);
   (function() {
     var _base = lastSmokeMs;
+    function _tickLiveClock() {
+      var clockEl = document.getElementById('live-clock');
+      var daysEl = document.getElementById('live-clock-days');
+      if (!clockEl) return;
+      var elapsedSec = Math.max(0, Math.floor((Date.now() - _base) / 1000));
+      var days = Math.floor(elapsedSec / 86400);
+      var h = Math.floor((elapsedSec % 86400) / 3600);
+      var m = Math.floor((elapsedSec % 3600) / 60);
+      var s = elapsedSec % 60;
+      clockEl.textContent = ('0'+h).slice(-2) + ':' + ('0'+m).slice(-2) + ':' + ('0'+s).slice(-2);
+      if (daysEl) daysEl.textContent = days > 0 ? ('🔥 ' + days + ' ' + wordDays(days)) : '✨ первые часы свободы';
+    }
     function _tickHealth() {
       var cdEl = document.getElementById('health-countdown');
       var lblEl = document.getElementById('health-label');
@@ -665,7 +679,6 @@ home(el, data) {
         cdEl.textContent = 'Готово ✓';
         if (lblEl) lblEl.textContent = '🏆 Все вехи здоровья пройдены';
         if (fillEl) fillEl.style.width = '100%';
-        clearInterval(window._healthTimer);
         return;
       }
       var idx = HEALTH.indexOf(next);
@@ -681,8 +694,15 @@ home(el, data) {
       var s = rem % 60;
       cdEl.textContent = (d > 0 ? d + 'д ' : '') + ('0'+h).slice(-2) + ':' + ('0'+m).slice(-2) + ':' + ('0'+s).slice(-2);
     }
-    _tickHealth();
-    window._healthTimer = setInterval(_tickHealth, 1000);
+    function _tick() {
+      var clockEl = document.getElementById('live-clock');
+      var cdEl = document.getElementById('health-countdown');
+      if (!clockEl && !cdEl) { clearInterval(window._healthTimer); return; }
+      _tickLiveClock();
+      _tickHealth();
+    }
+    _tick();
+    window._healthTimer = setInterval(_tick, 1000);
   })();
 
   initAIAdvice(data);
