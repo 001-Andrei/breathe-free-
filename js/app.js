@@ -547,9 +547,11 @@ home(el, data) {
   var greeting = hour<6 ? 'Доброй ночи' : hour<12 ? 'Доброе утро' : hour<18 ? 'Добрый день' : 'Добрый вечер';
   var greetIcon = hour<6 ? '🌙' : hour<12 ? '🌿' : hour<18 ? '☀️' : '🌆';
 
-  // Ring: progress toward next streak milestone (or prep-phase progress)
+  // Ring: seconds-sweep clock face (post-quit) or prep-phase progress
   var STREAK_GOALS = [1,3,7,14,30,90,180,365];
   var ringNumber, ringSub, ringPct, goalPillHtml, showLiveClock = false;
+  var ringR = 80, ringSize = 192;
+  var ringCirc = 2 * Math.PI * ringR;
   if (isPrepPhase) {
     ringNumber = daysToQuit;
     ringSub = 'дней до отказа';
@@ -563,19 +565,32 @@ home(el, data) {
     goalPillHtml = '';
   } else {
     showLiveClock = true;
+    // Ring itself acts as a clock face: the arc sweeps once per minute, driven by seconds
+    var elapsedSecInit = Math.max(0, Math.floor((now.getTime() - lastSmokeMs) / 1000));
+    ringPct = Math.round(((elapsedSecInit % 60) / 60) * 100);
     var goalDays = STREAK_GOALS.find(function(g){ return streak < g; });
     if (goalDays) {
       var prevGoal = STREAK_GOALS[STREAK_GOALS.indexOf(goalDays)-1] || 0;
-      ringPct = Math.round(((streak-prevGoal)/(goalDays-prevGoal))*100);
       var daysToGoal = goalDays - streak;
       goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:12px">🎯 до цели: ' + daysToGoal + ' ' + wordDays(daysToGoal) + '</div>';
     } else {
-      ringPct = 100;
       goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:12px">🏆 Все цели по серии достигнуты</div>';
     }
   }
-  var ringCirc = 2 * Math.PI * 76;
   var ringOffset = Math.round(ringCirc * (1 - ringPct/100));
+
+  var liveClockText = '00:00', liveDaysBadge = '';
+  if (showLiveClock) {
+    var initDays = Math.floor(elapsedSecInit / 86400);
+    var initH = Math.floor((elapsedSecInit % 86400) / 3600);
+    var initM = Math.floor((elapsedSecInit % 3600) / 60);
+    if (initDays > 0) {
+      liveClockText = initDays + 'д ' + initH + 'ч';
+    } else {
+      liveClockText = ('0'+initH).slice(-2) + ':' + ('0'+initM).slice(-2);
+      liveDaysBadge = '✨ первые часы свободы';
+    }
+  }
 
   el.innerHTML = '<div class="screen">'
     // ── Hero ──
@@ -587,17 +602,17 @@ home(el, data) {
     + '</div>'
     + '<div style="background:var(--accent-light);color:var(--accent);font-weight:700;font-size:13px;padding:6px 12px;border-radius:16px;display:flex;align-items:center;gap:4px;white-space:nowrap">🔥 ' + streak + ' ' + wordDays(streak) + '</div>'
     + '</div>'
-    + '<div style="position:relative;width:180px;height:180px;margin:16px auto 4px">'
-    + '<svg width="180" height="180" viewBox="0 0 180 180" style="transform:rotate(-90deg)">'
-    + '<circle cx="90" cy="90" r="76" fill="none" stroke="var(--accent-light)" stroke-width="12"/>'
-    + '<circle cx="90" cy="90" r="76" fill="none" stroke="url(#pg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + ringCirc + '" stroke-dashoffset="' + ringOffset + '"/>'
+    + '<div style="position:relative;width:' + ringSize + 'px;height:' + ringSize + 'px;margin:16px auto 4px">'
+    + '<svg width="' + ringSize + '" height="' + ringSize + '" viewBox="0 0 ' + ringSize + ' ' + ringSize + '" style="transform:rotate(-90deg)">'
+    + '<circle cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + ringR + '" fill="none" stroke="var(--accent-light)" stroke-width="12"/>'
+    + '<circle id="ring-arc" cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + ringR + '" fill="none" stroke="url(#pg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + ringCirc + '" stroke-dashoffset="' + ringOffset + '" style="transition:stroke-dashoffset .3s linear"/>'
     + '<defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#3fc88a"/><stop offset="100%" stop-color="#1f9d6b"/></linearGradient></defs>'
     + '</svg>'
-    + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
+    + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 20px">'
     + (showLiveClock
         ? '<div style="font-size:11px;font-weight:700;letter-spacing:.8px;color:var(--text2);text-transform:uppercase">Без сигарет</div>'
-          + '<div id="live-clock" style="font-size:30px;font-weight:800;color:var(--text);line-height:1.25;margin-top:4px;font-variant-numeric:tabular-nums;white-space:nowrap">00:00:00</div>'
-          + '<div id="live-clock-days" style="font-size:13px;color:var(--accent2);font-weight:700;margin-top:4px"></div>'
+          + '<div id="live-clock" style="font-size:32px;font-weight:800;color:var(--text);line-height:1.25;margin-top:4px;font-variant-numeric:tabular-nums;white-space:nowrap">' + liveClockText + '</div>'
+          + '<div id="live-clock-days" style="font-size:12px;color:var(--accent2);font-weight:700;margin-top:4px;' + (liveDaysBadge ? '' : 'display:none') + '">' + liveDaysBadge + '</div>'
         : '<div style="font-size:44px;font-weight:800;color:var(--text);line-height:1">' + ringNumber + '</div>'
           + '<div style="font-size:13px;color:var(--text2);font-weight:500;margin-top:2px">' + ringSub + '</div>')
     + '</div></div>'
@@ -659,14 +674,25 @@ home(el, data) {
     function _tickLiveClock() {
       var clockEl = document.getElementById('live-clock');
       var daysEl = document.getElementById('live-clock-days');
+      var arcEl = document.getElementById('ring-arc');
       if (!clockEl) return;
       var elapsedSec = Math.max(0, Math.floor((Date.now() - _base) / 1000));
       var days = Math.floor(elapsedSec / 86400);
       var h = Math.floor((elapsedSec % 86400) / 3600);
       var m = Math.floor((elapsedSec % 3600) / 60);
       var s = elapsedSec % 60;
-      clockEl.textContent = ('0'+h).slice(-2) + ':' + ('0'+m).slice(-2) + ':' + ('0'+s).slice(-2);
-      if (daysEl) daysEl.textContent = days > 0 ? ('🔥 ' + days + ' ' + wordDays(days)) : '✨ первые часы свободы';
+      if (days > 0) {
+        clockEl.textContent = days + 'д ' + h + 'ч';
+        if (daysEl) daysEl.style.display = 'none';
+      } else {
+        clockEl.textContent = ('0'+h).slice(-2) + ':' + ('0'+m).slice(-2);
+        if (daysEl) { daysEl.style.display = ''; daysEl.textContent = '✨ первые часы свободы'; }
+      }
+      // Ring arc sweeps once per minute, like a clock's second hand
+      if (arcEl) {
+        var secPct = s / 60;
+        arcEl.setAttribute('stroke-dashoffset', Math.round(ringCirc * (1 - secPct)));
+      }
     }
     function _tickHealth() {
       var cdEl = document.getElementById('health-countdown');
