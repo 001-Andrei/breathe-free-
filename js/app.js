@@ -79,6 +79,7 @@ const App = {
     if(!topbar || !title || !back) return;
     var show = !isTabScreen;
     topbar.classList.toggle('hd', !show);
+    document.body.classList.toggle('has-topbar', show);
     title.textContent = this.screenTitles[screen] || 'Дыши Свободно';
     var hideBackInTopbar = ['urge-help'].includes(screen);
     back.classList.toggle('hd', hideBackInTopbar);
@@ -542,11 +543,6 @@ home(el, data) {
 
   function wordDays(n) { return n===1?'день':(n>=2&&n<=4)?'дня':'дней'; }
 
-  // Greeting by time of day
-  var hour = now.getHours();
-  var greeting = hour<6 ? 'Доброй ночи' : hour<12 ? 'Доброе утро' : hour<18 ? 'Добрый день' : 'Добрый вечер';
-  var greetIcon = hour<6 ? '🌙' : hour<12 ? '🌿' : hour<18 ? '☀️' : '🌆';
-
   // Ring: seconds-sweep clock face (post-quit) or prep-phase progress
   var STREAK_GOALS = [1,3,7,14,30,90,180,365];
   var ringNumber, ringSub, ringPct, goalPillHtml, showLiveClock = false;
@@ -594,15 +590,11 @@ home(el, data) {
 
   el.innerHTML = '<div class="screen">'
     // ── Hero ──
-    + '<div class="hero-card" style="text-align:center">'
-    + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-    + '<div style="text-align:left">'
-    + '<div style="font-size:13px;color:var(--text2);font-weight:600">' + greetIcon + ' ' + greeting + '</div>'
-    + '<div style="font-size:20px;font-weight:800;margin-top:2px">' + (u.name||'Друг') + '</div>'
-    + '</div>'
+    + '<div class="hero-card" style="text-align:center;padding-top:14px">'
+    + '<div style="display:flex;justify-content:flex-end">'
     + '<div style="background:var(--accent-light);color:var(--accent);font-weight:700;font-size:13px;padding:6px 12px;border-radius:16px;display:flex;align-items:center;gap:4px;white-space:nowrap">🔥 ' + streak + ' ' + wordDays(streak) + '</div>'
     + '</div>'
-    + '<div style="position:relative;width:' + ringSize + 'px;height:' + ringSize + 'px;margin:16px auto 4px">'
+    + '<div style="position:relative;width:' + ringSize + 'px;height:' + ringSize + 'px;margin:4px auto 4px">'
     + '<svg width="' + ringSize + '" height="' + ringSize + '" viewBox="0 0 ' + ringSize + ' ' + ringSize + '" style="transform:rotate(-90deg)">'
     + '<circle cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + ringR + '" fill="none" stroke="var(--accent-light)" stroke-width="12"/>'
     + '<circle id="ring-arc" cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + ringR + '" fill="none" stroke="url(#pg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + ringCirc + '" stroke-dashoffset="' + ringOffset + '" style="transition:stroke-dashoffset .3s linear"/>'
