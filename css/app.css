@@ -91,6 +91,9 @@ body {
   user-select: none;
   max-width: 430px;
   margin: 0 auto;
+  padding-top: calc(var(--st) + 6px);
+}
+body.has-topbar {
   padding-top: calc(var(--st) + 54px);
 }
 input,button,textarea,select { font-family:inherit; font-size:inherit; }
