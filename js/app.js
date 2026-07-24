@@ -117,17 +117,38 @@ const Toast = {
 };
 
 function fmtMins(m) {
+  m = Math.round(m);
   if(m<=0) return '0 мин';
   if(m<60) return m + ' мин';
-  if(m<1440) return Math.floor(m/60) + ' ч ' + (m%60) + ' мин';
-  if(m<43200) return Math.floor(m/1440) + ' д ' + Math.floor((m%1440)/60) + ' ч';
-  return Math.floor(m/43200) + ' мес';
+  if(m<1440) { var h=Math.floor(m/60), mm=m%60; return mm ? h+' ч '+mm+' мин' : h+' ч'; }
+  if(m<43200) { var d=Math.floor(m/1440), dh=Math.floor((m%1440)/60); return dh ? d+' д '+dh+' ч' : d+' д'; }
+  var mo=Math.floor(m/43200), md=Math.floor((m%43200)/1440);
+  return md ? mo+' мес '+md+' д' : mo+' мес';
 }
 function fmtDays(d) {
   if(d===0) return '0 дней';
   if(d===1) return '1 день';
   if(d<5) return d + ' дня';
   return d + ' дней';
+}
+// Момент последнего выкуренного стика — единая точка отсчёта для вех здоровья.
+// Берём последнюю запись из stickLog; если записей нет — дату отказа; иначе «сейчас».
+function getLastSmokeMs(data) {
+  var logs = data.dailyLogs || {};
+  var nowMs = Date.now();
+  var latest = null;
+  Object.keys(logs).forEach(function(dateKey) {
+    var log = logs[dateKey];
+    if (!log || log.puffs <= 0) return;
+    var t = (log.stickLog && log.stickLog.length > 0)
+      ? new Date(log.stickLog[log.stickLog.length-1].time).getTime()
+      : new Date(dateKey + 'T12:00:00').getTime();
+    if (t < nowMs && (latest === null || t > latest)) latest = t;
+  });
+  if (latest !== null) return latest;
+  var qd = data.user && data.user.quitDate ? new Date(data.user.quitDate).getTime() : null;
+  if (qd && qd <= nowMs) return qd;
+  return nowMs;
 }
 // Оборачивает текст в «», но не удваивает уже имеющиеся кавычки
 function quoteText(t) {
@@ -540,20 +561,7 @@ home(el, data) {
   var doneCount = doneEx.filter(function(e){return e.startsWith(lvlNum+'.');}).length;
   var totalEx = curLvl ? curLvl.exercises.length : 4;
   var nextEx = curLvl ? curLvl.exercises.find(function(e){return !doneEx.includes(e.id);}) : null;
-  var lastSmokeMs = (function() {
-    var latest = null;
-    Object.keys(logs).sort().forEach(function(dateKey) {
-      var log = logs[dateKey];
-      if (!log || log.puffs <= 0) return;
-      var t = (log.stickLog && log.stickLog.length > 0)
-        ? new Date(log.stickLog[log.stickLog.length-1].time).getTime()
-        : new Date(dateKey + 'T12:00:00').getTime();
-      if (t < now.getTime() && (latest === null || t > latest)) latest = t;
-    });
-    if (latest !== null) return latest;
-    if (quitDate && quitDate.getTime() <= now.getTime()) return quitDate.getTime();
-    return now.getTime();
-  })();
+  var lastSmokeMs = getLastSmokeMs(data);
   var minsSmokeFree = (now.getTime() - lastSmokeMs) / 60000;
   var healthNext = HEALTH.find(function(h){ return minsSmokeFree < h.mins; });
 
@@ -1583,12 +1591,35 @@ stats(el, data) {
   }
   var values = days.map(function(x){ return x.puffs===null ? null : +x.puffs; }).filter(function(v){ return v!==null; });
   var maxPuffs = Math.max(1, ...values, +(u.dailyPuffs || 1));
-  var points = days.map(function(d, idx){
-    var val = d.puffs===null ? 0 : +d.puffs;
-    var x = Math.round((idx / 29) * 300);
-    var y = Math.round(120 - (val / maxPuffs) * 100);
-    return x + ',' + y;
-  }).join(' ');
+  // Строим ломаную сегментами: дни без записей — разрыв, а не ноль
+  var CH = { x0:30, x1:312, y0:12, y1:104 };
+  var chartX = function(idx){ return CH.x0 + (idx/29)*(CH.x1-CH.x0); };
+  var chartY = function(v){ return CH.y1 - (v/maxPuffs)*(CH.y1-CH.y0); };
+  var segments = [], cur = [], dots = '';
+  days.forEach(function(d, idx){
+    if (d.puffs === null || d.puffs === undefined) { if (cur.length) { segments.push(cur); cur = []; } return; }
+    var x = chartX(idx), y = chartY(+d.puffs);
+    cur.push(x.toFixed(1) + ',' + y.toFixed(1));
+    dots += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(+d.puffs===0?2.6:2.2)+'" fill="'+(+d.puffs===0?'var(--accent)':'var(--blue)')+'"/>';
+  });
+  if (cur.length) segments.push(cur);
+  var polylines = segments.map(function(seg){
+    return seg.length === 1
+      ? ''
+      : '<polyline points="'+seg.join(' ')+'" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  }).join('');
+  // Сетка и подписи оси Y
+  var yTicks = [0, Math.round(maxPuffs/2), maxPuffs].filter(function(v,i,a){ return a.indexOf(v)===i; });
+  var grid = yTicks.map(function(v){
+    var y = chartY(v).toFixed(1);
+    return '<line x1="'+CH.x0+'" y1="'+y+'" x2="'+CH.x1+'" y2="'+y+'" stroke="rgba(20,36,28,.08)" stroke-width="1"/>'
+      + '<text x="'+(CH.x0-6)+'" y="'+(+y+3.5).toFixed(1)+'" text-anchor="end" style="font-size:9px;fill:var(--text3)">'+v+'</text>';
+  }).join('');
+  // Пунктир — дневная норма
+  var goalLine = (u.dailyPuffs && u.dailyPuffs <= maxPuffs)
+    ? '<line x1="'+CH.x0+'" y1="'+chartY(u.dailyPuffs).toFixed(1)+'" x2="'+CH.x1+'" y2="'+chartY(u.dailyPuffs).toFixed(1)+'" stroke="var(--orange)" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>'
+    : '';
+  var hasChartData = days.some(function(d){ return d.puffs !== null && d.puffs !== undefined; });
   var totalCr = { body:0, emotion:0, thought:0, situation:0 };
   days.forEach(function(d){ d.cravings.forEach(function(c){ if(totalCr[c.type]!==undefined) totalCr[c.type]++; }); });
   var totalCrCount = totalCr.body + totalCr.emotion + totalCr.thought + totalCr.situation;
@@ -1628,9 +1659,18 @@ stats(el, data) {
     + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">📊 Статистика</h2>'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">Последние 30 дней прогресса</p>'
     + '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">СТИКИ ПО ДНЯМ</div>'
-    + '<svg viewBox="0 0 300 130" style="width:100%;height:130px;background:var(--bg);border-radius:10px"><line x1="0" y1="120" x2="300" y2="120" stroke="#ddd" />'
-    + '<polyline points="'+points+'" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>'
-    + '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text3)"><span>30 дней назад</span><span>Сегодня</span></div></div>'
+    + (hasChartData
+        ? '<svg viewBox="0 0 320 118" style="width:100%;height:132px;background:var(--bg);border-radius:10px;display:block">'
+          + grid + goalLine + polylines + dots
+          + '</svg>'
+          + '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text3)"><span>30 дней назад</span><span>Сегодня</span></div>'
+          + '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--text3)">'
+          + '<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);vertical-align:middle;margin-right:4px"></span>чистый день</span>'
+          + (u.dailyPuffs && u.dailyPuffs<=maxPuffs ? '<span><span style="display:inline-block;width:12px;border-top:1px dashed var(--orange);vertical-align:middle;margin-right:4px"></span>норма '+u.dailyPuffs+'</span>' : '')
+          + '<span>разрыв — нет записи</span>'
+          + '</div>'
+        : '<div style="text-align:center;padding:24px 8px;color:var(--text3);font-size:13px">Пока нет записей.<br>Отмечай стики в Трекере — здесь появится график.</div>')
+    + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+(p.consecutiveSmokeFree||0)+'</div><div class="stat-label">Серия без стиков</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">'+(p.longestStreak||0)+'</div><div class="stat-label">Лучший результат</div></div>'
@@ -1638,8 +1678,11 @@ stats(el, data) {
     + '<div class="stat-card"><div class="stat-val" style="color:var(--purple)">'+avgCraving+'</div><div class="stat-label">Ср. тяга (1-10)</div></div>'
     + '</div>'
     + '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ТИПЫ ТРИГГЕРОВ</div>'
-    + '<div style="display:flex;align-items:center;gap:14px"><svg viewBox="0 0 128 128" width="128" height="128">'+piePaths+'<circle cx="64" cy="64" r="30" fill="white"></circle><text x="64" y="68" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#666">'+totalCrCount+'</text></svg>'
-    + '<div style="display:flex;flex-direction:column;gap:6px">'+legends+'</div></div></div>'
+    + (totalCrCount
+        ? '<div style="display:flex;align-items:center;gap:14px"><svg viewBox="0 0 128 128" width="128" height="128">'+piePaths+'<circle cx="64" cy="64" r="30" fill="#fff"></circle><text x="64" y="68" text-anchor="middle" style="font-size:14px;font-weight:700;fill:var(--text2)">'+totalCrCount+'</text></svg>'
+          + '<div style="display:flex;flex-direction:column;gap:6px">'+legends+'</div></div>'
+        : '<div style="text-align:center;padding:20px 8px;color:var(--text3);font-size:13px">Пока нет записей о тяге.<br>Нажми <b>SOS</b> в момент тяги — здесь появится разбор триггеров.</div>')
+    + '</div>'
     + '<div class="card"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ПРОГРЕСС УРОВНЕЙ</div>'
     + '<div class="pbar" style="margin-bottom:8px"><div class="pbar-fill" style="width:'+Math.round((current/Math.max(1,totalEx))*100)+'%"></div></div>'
     + '<div style="font-size:13px;color:var(--text2)">'+(u.currentLevel||1)+' / 8 уровней · '+current+' / '+totalEx+' упражнений</div></div>'
@@ -1707,7 +1750,7 @@ health(el, data) {
   var u = data.user, p = data.progress;
   var quitDate = u.quitDate ? new Date(u.quitDate) : null;
   var now = new Date();
-  var minsSinceQuit = quitDate ? Math.max(0,Math.floor((now-quitDate)/60000)) : 0;
+  var minsSinceQuit = Math.max(0, Math.floor((now.getTime() - getLastSmokeMs(data))/60000));
   el.innerHTML = '<div class="screen">'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Что происходит в твоём теле</p>'
     + (!u.quitDate?'<div class="card" style="background:var(--orange-light);border-color:rgba(245,166,35,.2);margin-bottom:16px;color:var(--orange)">Установи дату отказа в настройках чтобы видеть прогресс</div>':'')
