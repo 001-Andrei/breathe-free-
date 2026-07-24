@@ -1490,10 +1490,7 @@ tracker(el, data) {
         var t = isToday ? new Date().toISOString() : (selectedDateKey + 'T' + nowHM() + ':00');
         curStickLog.push({time: t, note: ''});
         _persist(selectedDateKey, curPuffs, fresh.mood || 3, fresh.note || '', curStickLog);
-        editingIndex = curStickLog.length - 1;
         render();
-        var ti = document.getElementById('stick-time-inp');
-        if (ti) { ti.focus(); }
       } else {
         if (curPuffs > 0) {
           curPuffs--;
