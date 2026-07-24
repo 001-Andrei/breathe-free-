@@ -131,6 +131,12 @@ function fmtDays(d) {
   if(d<5) return d + ' дня';
   return d + ' дней';
 }
+// «24 июля 2026» — вместо системного 07/24/2026 у нативного input[type=date]
+function fmtDateRu(key) {
+  var d = new Date(key + 'T12:00:00');
+  if (isNaN(d)) return key;
+  return d.toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s*г\.$/, '');
+}
 // Момент последнего выкуренного стика — единая точка отсчёта для вех здоровья.
 // Берём последнюю запись из stickLog; если записей нет — дату отказа; иначе «сейчас».
 function getLastSmokeMs(data) {
@@ -1273,7 +1279,14 @@ urgeHelp(el, data) {
       el.innerHTML = '<div class="screen screen-full" style="background:linear-gradient(135deg,#FFF3E0,#FFEBEE);min-height:100dvh">'
         + '<div style="text-align:center;padding:16px 0 12px"><div style="font-size:48px">🆘</div>'
         + '<h2 style="font-size:24px;font-weight:800;margin-top:8px">Помощь при тяге</h2>'
-        + '<p style="color:var(--text2);font-size:15px;margin-top:6px">Что ты сейчас чувствуешь?</p></div>'
+        + '</div>'
+        + '<div style="padding:0 16px 14px">'
+        + '<div class="card" role="button" style="cursor:pointer;background:var(--accent-grad);color:#fff;display:flex;align-items:center;gap:14px;border:none" onclick="App.navigate(\'breathing\')">'
+        + '<div style="font-size:30px">💨</div>'
+        + '<div style="flex:1;text-align:left"><div style="font-weight:800;font-size:17px">Просто дышать</div>'
+        + '<div style="font-size:13px;opacity:.9">Не нужно ничего выбирать · 1 минута</div></div>'
+        + '<div style="font-size:20px;opacity:.8">›</div></div></div>'
+        + '<p style="color:var(--text2);font-size:14px;text-align:center;margin-bottom:10px">…или разберём, что именно происходит:</p>'
         + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
         + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','«Мне нужен стик»'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
             return '<div class="card urge-type-card" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:32px">'+t[1]+'</div><div style="font-weight:700;font-size:16px">'+t[2]+'</div><div style="color:var(--text2);font-size:13px">'+t[3]+'</div></div>';
@@ -1444,11 +1457,14 @@ tracker(el, data) {
       // ── Date switcher ──
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
       + '<div role="button" onclick="window._dayShift(-1)" style="width:38px;height:38px;flex-shrink:0;border-radius:12px;background:#fff;border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text2);cursor:pointer">‹</div>'
-      + '<input type="date" id="tracker-date" value="'+selectedDateKey+'" max="'+todayKey+'" onchange="window._dateChange(this.value)" style="flex:1;text-align:center;padding:9px 8px;border-radius:12px;border:1px solid var(--glass-border);background:#fff;font-size:14px;font-weight:600;color:var(--text)">'
+      + '<label style="flex:1;position:relative;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;border-radius:12px;border:1px solid var(--glass-border);background:#fff;font-size:14px;font-weight:600;color:var(--text);cursor:pointer">'
+      + '<span>' + fmtDateRu(selectedDateKey) + '</span><span style="font-size:13px;color:var(--text3)">▾</span>'
+      + '<input type="date" id="tracker-date" value="'+selectedDateKey+'" max="'+todayKey+'" onchange="window._dateChange(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;border:none;cursor:pointer">'
+      + '</label>'
       + '<div role="button" onclick="window._dayShift(1)" style="width:38px;height:38px;flex-shrink:0;border-radius:12px;background:#fff;border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:17px;'+(isToday?'opacity:.35;pointer-events:none':'cursor:pointer')+';color:var(--text2)">›</div>'
       + '</div>'
       + (isToday ? '' : '<div style="text-align:center;margin-bottom:10px"><span role="button" onclick="window._dateChange(\''+todayKey+'\')" style="font-size:13px;color:var(--accent);cursor:pointer;font-weight:600">← Вернуться к сегодня</span></div>')
-      + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px;text-align:center">' + new Date(selectedDateKey+'T12:00:00').toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'}) + (isToday?' · сегодня':'') + '</p>'
+      + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px;text-align:center">' + new Date(selectedDateKey+'T12:00:00').toLocaleDateString('ru',{weekday:'long'}) + (isToday?' · сегодня':'') + '</p>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">СТИКОВ</div>'
       + '<div style="display:flex;align-items:center;justify-content:center;gap:24px">'
@@ -1483,9 +1499,9 @@ tracker(el, data) {
       + '</div></div>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАМЕТКА О ДНЕ (НЕОБЯЗАТЕЛЬНО)</div>'
-      + '<textarea class="input" id="day-note" placeholder="Как прошёл день?" style="height:80px;resize:none;display:block;line-height:1.5" rows="3">'+(dayLog.note||'')+'</textarea></div>'
-      + '<button class="btn-primary" onclick="window._saveDay()">💾 Сохранить</button>'
-      + '<p style="font-size:12px;color:var(--text3);text-align:center;margin-top:8px">Записи можно посмотреть в Дневнике → вкладка «Дни»</p>'
+      + '<textarea class="input" id="day-note" placeholder="Как прошёл день?" style="height:80px;resize:none;display:block;line-height:1.5" rows="3">'+(dayLog.note||'')+'</textarea>'
+      + '<div id="note-status" style="font-size:12px;color:var(--text3);margin-top:8px;min-height:16px">Сохраняется автоматически</div></div>'
+      + '<p style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px">Записи можно посмотреть в Дневнике → вкладка «Дни»</p>'
       + '</div>';
 
     window._dateChange = function(newDate) {
@@ -1522,6 +1538,7 @@ tracker(el, data) {
           _persist(selectedDateKey, curPuffs, fresh.mood || 3, fresh.note || '', curStickLog);
           editingIndex = null;
           render();
+          if (curPuffs === 0) { var m = document.getElementById('cday-msg'); if (m) confetti(m); }
         }
       }
     };
@@ -1565,16 +1582,32 @@ tracker(el, data) {
       render();
     };
 
-    window._saveDay = function() {
-      var noteEl = document.getElementById('day-note');
-      var noteVal = noteEl ? noteEl.value : '';
-      var fresh = getDayLog(selectedDateKey);
-      _persist(selectedDateKey, fresh.puffs || 0, fresh.mood || 3, noteVal, fresh.stickLog || []);
-      Toast.show('✅ Сохранено','success');
-      if ((fresh.puffs||0)===0) { var m = document.getElementById('cday-msg'); if (m) confetti(m); }
-      var newAchs = Storage.checkAndUnlockAchievements();
-      newAchs.forEach(function(a){ Toast.show(a.emoji+' '+a.name,'success'); });
-    };
+    // Заметка сохраняется сама — отдельная кнопка не нужна
+    var noteEl = document.getElementById('day-note');
+    if (noteEl) {
+      var saveNote = function() {
+        var fresh = getDayLog(selectedDateKey);
+        if ((fresh.note || '') === noteEl.value) return;
+        _persist(selectedDateKey, fresh.puffs || 0, fresh.mood || 3, noteEl.value, fresh.stickLog || []);
+        var st = document.getElementById('note-status');
+        if (st) {
+          st.textContent = '✓ Сохранено';
+          st.style.color = 'var(--accent)';
+          clearTimeout(window._noteStatusT);
+          window._noteStatusT = setTimeout(function(){
+            st.textContent = 'Сохраняется автоматически';
+            st.style.color = 'var(--text3)';
+          }, 1600);
+        }
+        var newAchs = Storage.checkAndUnlockAchievements();
+        newAchs.forEach(function(a){ Toast.show(a.emoji+' '+a.name,'success'); });
+      };
+      noteEl.addEventListener('input', function(){
+        clearTimeout(window._noteSaveT);
+        window._noteSaveT = setTimeout(saveNote, 700);
+      });
+      noteEl.addEventListener('blur', function(){ clearTimeout(window._noteSaveT); saveNote(); });
+    }
   }
   render();
 },
@@ -2058,17 +2091,31 @@ settings(el, data) {
   var u = data.user;
   var s = data.settings || { notifications: false, reminderTime: '20:00' };
   el.innerHTML = '<div class="screen">'
-    + '<button onclick="App.back()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
     + '<h2 style="font-size:22px;font-weight:800;margin-bottom:20px">⚙️ Настройки</h2>'
     + '<div class="card" style="margin-bottom:12px">'
     + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">ПРОФИЛЬ</div>'
     + '<div class="input-group"><label class="input-label">ИМЯ</label><input class="input" id="s-name" value="'+(u.name||'')+'"></div>'
-    + '<div class="input-group"><label class="input-label">ДАТА ОТКАЗА</label><input class="input" id="s-date" type="date" value="'+(u.quitDate?u.quitDate.split('T')[0]:'')+'"></div>'
+    + '<div class="input-group"><label class="input-label">ДАТА ОТКАЗА</label>'
+    + '<label style="position:relative;display:flex;align-items:center;justify-content:space-between;cursor:pointer" class="input">'
+    + '<span>' + (u.quitDate ? fmtDateRu(u.quitDate.split('T')[0]) : 'не выбрана') + '</span><span style="color:var(--text3)">▾</span>'
+    + '<input id="s-date" type="date" value="'+(u.quitDate?u.quitDate.split('T')[0]:'')+'" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;border:none;cursor:pointer">'
+    + '</label></div>'
     + '<div class="input-group"><label class="input-label">МЕТОД</label><select class="input" id="s-method"><option value="cold" '+(u.quitMethod==='cold'?'selected':'')+'>Резкий отказ</option><option value="gradual" '+(u.quitMethod==='gradual'?'selected':'')+'>Постепенное снижение</option></select></div>'
     + '<div class="input-group"><label class="input-label">СНИЖЕНИЕ В НЕДЕЛЮ (%)</label><input class="input" id="s-grad" type="number" min="10" max="30" step="5" value="'+(u.gradualReductionPct||20)+'"></div>'
     + '<div class="input-group"><label class="input-label">ЦЕНА ПАЧКИ (€)</label><input class="input" id="s-cost" type="number" step="0.01" min="0" value="'+(u.packPrice||u.dailyCost||6.50)+'"></div>'
     + '<div class="input-group"><label class="input-label">СТИКОВ В ПАЧКЕ</label><input class="input" id="s-packsize" type="number" value="'+(u.packSize||20)+'"></div>'
     + '<div class="input-group" style="margin:0"><label class="input-label">СТИКОВ/ДЕНЬ</label><input class="input" id="s-puffs" type="number" value="'+(u.dailyPuffs||20)+'"></div>'
+    + '</div>'
+    + '<div class="card" style="margin-bottom:12px">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px">МОИ ЦЕННОСТИ</div>'
+    + '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Ради чего ты бросаешь. Выбери 1–3.</div>'
+    + VALUES.map(function(v){
+        var on = (u.values||[]).indexOf(v.id) !== -1;
+        return '<div class="value-card _sval'+(on?' on':'')+'" data-id="'+v.id+'" style="margin-bottom:8px">'
+          + '<div style="font-size:22px">'+v.emoji+'</div>'
+          + '<div style="flex:1;font-size:15px;font-weight:600">'+v.name+'</div>'
+          + '<div style="color:'+(on?'var(--accent)':'var(--text3)')+';font-size:18px">'+(on?'✓':'')+'</div></div>';
+      }).join('')
     + '</div>'
     + '<div class="card" style="margin-bottom:12px">'
     + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">УВЕДОМЛЕНИЯ</div>'
@@ -2120,8 +2167,24 @@ settings(el, data) {
     }
     var apiKey = (document.getElementById('s-apikey')||{}).value || '';
     Storage.saveAIKey(apiKey.trim());
+    var picked = [];
+    document.querySelectorAll('._sval.on').forEach(function(x){ picked.push(x.dataset.id); });
+    if (picked.length) Storage.updateUser({ values: picked });
     Toast.show('✅ Сохранено','success');
   };
+  document.querySelectorAll('._sval').forEach(function(card){
+    card.onclick = function(){
+      var on = card.classList.contains('on');
+      if (!on && document.querySelectorAll('._sval.on').length >= 3) {
+        Toast.show('Не больше трёх ценностей','warn'); return;
+      }
+      card.classList.toggle('on');
+      var mark = card.lastElementChild;
+      var nowOn = card.classList.contains('on');
+      mark.textContent = nowOn ? '✓' : '';
+      mark.style.color = nowOn ? 'var(--accent)' : 'var(--text3)';
+    };
+  });
   window._exportData=function(){
     var payload = Storage.get() || {};
     var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
