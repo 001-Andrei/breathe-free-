@@ -117,17 +117,60 @@ const Toast = {
 };
 
 function fmtMins(m) {
+  m = Math.round(m);
   if(m<=0) return '0 мин';
   if(m<60) return m + ' мин';
-  if(m<1440) return Math.floor(m/60) + ' ч ' + (m%60) + ' мин';
-  if(m<43200) return Math.floor(m/1440) + ' д ' + Math.floor((m%1440)/60) + ' ч';
-  return Math.floor(m/43200) + ' мес';
+  if(m<1440) { var h=Math.floor(m/60), mm=m%60; return mm ? h+' ч '+mm+' мин' : h+' ч'; }
+  if(m<43200) { var d=Math.floor(m/1440), dh=Math.floor((m%1440)/60); return dh ? d+' д '+dh+' ч' : d+' д'; }
+  var mo=Math.floor(m/43200), md=Math.floor((m%43200)/1440);
+  return md ? mo+' мес '+md+' д' : mo+' мес';
 }
 function fmtDays(d) {
   if(d===0) return '0 дней';
   if(d===1) return '1 день';
   if(d<5) return d + ' дня';
   return d + ' дней';
+}
+// «24 июля 2026» — вместо системного 07/24/2026 у нативного input[type=date]
+function fmtDateRu(key) {
+  var d = new Date(key + 'T12:00:00');
+  if (isNaN(d)) return key;
+  return d.toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s*г\.$/, '');
+}
+// Момент последнего выкуренного стика — единая точка отсчёта для вех здоровья.
+// Берём последнюю запись из stickLog; если записей нет — дату отказа; иначе «сейчас».
+function getLastSmokeMs(data) {
+  var logs = data.dailyLogs || {};
+  var nowMs = Date.now();
+  var latest = null;
+  Object.keys(logs).forEach(function(dateKey) {
+    var log = logs[dateKey];
+    if (!log || log.puffs <= 0) return;
+    var t = (log.stickLog && log.stickLog.length > 0)
+      ? new Date(log.stickLog[log.stickLog.length-1].time).getTime()
+      : new Date(dateKey + 'T12:00:00').getTime();
+    if (t < nowMs && (latest === null || t > latest)) latest = t;
+  });
+  if (latest !== null) return latest;
+  var qd = data.user && data.user.quitDate ? new Date(data.user.quitDate).getTime() : null;
+  if (qd && qd <= nowMs) return qd;
+  return nowMs;
+}
+// Оборачивает текст в «», но не удваивает уже имеющиеся кавычки
+function quoteText(t) {
+  t = (t || '').trim();
+  if (!t) return '';
+  var first = t.charAt(0), last = t.charAt(t.length - 1);
+  if ((first === '«' && last === '»') || (first === '"' && last === '"')) return t;
+  return '«' + t + '»';
+}
+// «1 чистый день» / «2 чистых дня» / «5 чистых дней»
+function fmtCleanDays(d) {
+  var n = Math.abs(d) % 100, n1 = n % 10;
+  if (n > 10 && n < 20) return d + ' чистых дней';
+  if (n1 === 1) return d + ' чистый день';
+  if (n1 >= 2 && n1 <= 4) return d + ' чистых дня';
+  return d + ' чистых дней';
 }
 function today() { return new Date().toISOString().split('T')[0]; }
 function maybeSendDailyReminder(forceNow) {
@@ -524,20 +567,7 @@ home(el, data) {
   var doneCount = doneEx.filter(function(e){return e.startsWith(lvlNum+'.');}).length;
   var totalEx = curLvl ? curLvl.exercises.length : 4;
   var nextEx = curLvl ? curLvl.exercises.find(function(e){return !doneEx.includes(e.id);}) : null;
-  var lastSmokeMs = (function() {
-    var latest = null;
-    Object.keys(logs).sort().forEach(function(dateKey) {
-      var log = logs[dateKey];
-      if (!log || log.puffs <= 0) return;
-      var t = (log.stickLog && log.stickLog.length > 0)
-        ? new Date(log.stickLog[log.stickLog.length-1].time).getTime()
-        : new Date(dateKey + 'T12:00:00').getTime();
-      if (t < now.getTime() && (latest === null || t > latest)) latest = t;
-    });
-    if (latest !== null) return latest;
-    if (quitDate && quitDate.getTime() <= now.getTime()) return quitDate.getTime();
-    return now.getTime();
-  })();
+  var lastSmokeMs = getLastSmokeMs(data);
   var minsSmokeFree = (now.getTime() - lastSmokeMs) / 60000;
   var healthNext = HEALTH.find(function(h){ return minsSmokeFree < h.mins; });
 
@@ -546,7 +576,7 @@ home(el, data) {
   // Ring: seconds-sweep clock face (post-quit) or prep-phase progress
   var STREAK_GOALS = [1,3,7,14,30,90,180,365];
   var ringNumber, ringSub, ringPct, goalPillHtml, showLiveClock = false;
-  var ringR = 80, ringSize = 192;
+  var ringR = 74, ringSize = 176;
   var ringCirc = 2 * Math.PI * ringR;
   if (isPrepPhase) {
     ringNumber = daysToQuit;
@@ -568,9 +598,9 @@ home(el, data) {
     if (goalDays) {
       var prevGoal = STREAK_GOALS[STREAK_GOALS.indexOf(goalDays)-1] || 0;
       var daysToGoal = goalDays - streak;
-      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:12px">🎯 до цели: ' + daysToGoal + ' ' + wordDays(daysToGoal) + '</div>';
+      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:6px">🎯 до цели: ' + daysToGoal + ' ' + wordDays(daysToGoal) + '</div>';
     } else {
-      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:12px">🏆 Все цели по серии достигнуты</div>';
+      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:6px">🏆 Все цели по серии достигнуты</div>';
     }
   }
   var ringOffset = Math.round(ringCirc * (1 - ringPct/100));
@@ -590,11 +620,12 @@ home(el, data) {
 
   el.innerHTML = '<div class="screen">'
     // ── Hero ──
-    + '<div class="hero-card" style="text-align:center;padding-top:14px">'
-    + '<div style="display:flex;justify-content:flex-end">'
-    + '<div style="background:var(--accent-light);color:var(--accent);font-weight:700;font-size:13px;padding:6px 12px;border-radius:16px;display:flex;align-items:center;gap:4px;white-space:nowrap">🔥 ' + streak + ' ' + wordDays(streak) + '</div>'
+    + '<div class="hero-card" style="text-align:center;padding:12px 16px 16px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="background:var(--accent-light);color:var(--accent);font-weight:700;font-size:13px;padding:5px 11px;border-radius:14px;white-space:nowrap">🔥 ' + streak + ' ' + wordDays(streak) + '</div>'
+    + '<div role="button" onclick="App.navigate(\'achievements\')" style="font-size:13px;color:var(--text2);cursor:pointer;white-space:nowrap">🏆 ' + p.achievements.length + '/' + ACHIEVEMENTS.length + ' →</div>'
     + '</div>'
-    + '<div style="position:relative;width:' + ringSize + 'px;height:' + ringSize + 'px;margin:4px auto 4px">'
+    + '<div style="position:relative;width:' + ringSize + 'px;height:' + ringSize + 'px;margin:2px auto 0">'
     + '<svg width="' + ringSize + '" height="' + ringSize + '" viewBox="0 0 ' + ringSize + ' ' + ringSize + '" style="transform:rotate(-90deg)">'
     + '<circle cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + ringR + '" fill="none" stroke="var(--accent-light)" stroke-width="12"/>'
     + '<circle id="ring-arc" cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + ringR + '" fill="none" stroke="url(#pg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + ringCirc + '" stroke-dashoffset="' + ringOffset + '" style="transition:stroke-dashoffset .3s linear"/>'
@@ -609,7 +640,6 @@ home(el, data) {
           + '<div style="font-size:13px;color:var(--text2);font-weight:500;margin-top:2px">' + ringSub + '</div>')
     + '</div></div>'
     + goalPillHtml
-    + '<div style="margin-top:10px"><span role="button" onclick="App.navigate(\'achievements\')" style="font-size:13px;color:var(--text2);cursor:pointer">🏆 ' + p.achievements.length + '/' + ACHIEVEMENTS.length + ' достижений →</span></div>'
     + '</div>'
     // ── Stats (кликабельные) ──
     + '<div style="display:flex;gap:10px;margin-bottom:10px">'
@@ -746,7 +776,7 @@ levels(el, data) {
     var badgeCls = isDone?'done':isCur?'current':'locked';
     var pct = Math.round(doneCnt/lvl.exercises.length*100);
     var lockMsg = lvl.phase===2
-      ? (streak<7?'🔒 Нужно '+Math.max(0,7-streak)+' чистых дней подряд':'🔒 Завершите предыдущий уровень')
+      ? (streak<7?'🔒 Нужно '+fmtCleanDays(Math.max(0,7-streak))+' подряд':'🔒 Завершите предыдущий уровень')
       : '🔒 Завершите предыдущий уровень';
     return '<div class="'+cls+'" data-lvl="'+lvl.id+'" data-unlocked="'+(isUnlocked?1:0)+'">'
       +'<div style="display:flex;align-items:center;gap:14px">'
@@ -775,7 +805,7 @@ levels(el, data) {
   html += '<div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.5px;margin-top:16px;margin-bottom:6px">ФАЗА 2 — ЖИЗНЬ БЕЗ НИКОТИНА</div>';
   if(phase2StreakNeeded) {
     html += '<div class="card card-sm" style="margin-bottom:10px;background:linear-gradient(135deg,#FFF8E1,#FFF3E0)">'
-      +'<div style="font-size:13px;font-weight:600;color:var(--orange)">🔒 Разблокировка через '+(7-streak)+' чистых дней</div>'
+      +'<div style="font-size:13px;font-weight:600;color:var(--orange)">🔒 Разблокировка через '+fmtCleanDays(7-streak)+'</div>'
       +'<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:'+Math.round(streak/7*100)+'%;background:var(--orange)"></div></div>'
       +'<div style="font-size:11px;color:var(--text3);margin-top:4px">'+streak+' / 7 дней подряд</div>'
       +'</div>';
@@ -867,7 +897,7 @@ exercise(el, data, exId) {
 
   var body = '';
   if(ex.type==='read'||ex.type==='metaphor'||ex.type==='reframe'||ex.type==='defusion'||ex.type==='self_compassion') {
-    var paras = ex.content.split('\n').map(function(p){return p?'<p style="margin-bottom:12px;font-size:16px;line-height:1.6">'+p+'</p>':'<br>';}).join('');
+    var paras = ex.content.split('\n').filter(function(p){return p.trim();}).map(function(p){return '<p style="margin-bottom:12px;font-size:16px;line-height:1.6">'+p+'</p>';}).join('');
     body = '<div class="card" style="margin-bottom:20px">'+paras+'</div>';
   }
   if(ex.type==='story') {
@@ -875,13 +905,13 @@ exercise(el, data, exId) {
       + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
       + '<div style="width:44px;height:44px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>'
       + '<div><div style="font-weight:700">'+ex.author+'</div><div style="color:var(--text2);font-size:13px">'+ex.device+'</div></div></div>'
-      + ex.story.split('\n').map(function(p){return p?'<p style="margin-bottom:12px;font-size:15px;line-height:1.7;color:var(--text)">'+p+'</p>':'<br>';}).join('')
+      + ex.story.split('\n').filter(function(p){return p.trim();}).map(function(p){return '<p style="margin-bottom:12px;font-size:15px;line-height:1.7;color:var(--text)">'+p+'</p>';}).join('')
       + '</div>';
   }
   if(ex.type==='timer') {
     var dur = ex.duration||120;
     body = '<div class="card" style="margin-bottom:20px;text-align:center">'
-      + ex.content.split('\n').map(function(p){return p?'<p style="margin-bottom:10px;font-size:15px;line-height:1.6;color:var(--text)">'+p+'</p>':'<br>';}).join('')
+      + ex.content.split('\n').filter(function(p){return p.trim();}).map(function(p){return '<p style="margin-bottom:10px;font-size:15px;line-height:1.6;color:var(--text)">'+p+'</p>';}).join('')
       + '<div id="timer-disp" style="font-size:48px;font-weight:800;color:var(--blue);margin:20px 0">'+Math.floor(dur/60)+':'+String(dur%60).padStart(2,'0')+'</div>'
       + '<button class="btn-primary" id="timer-btn" onclick="window._startTimer(' + dur + ')">▶ Начать таймер</button>'
       + '</div>';
@@ -1187,7 +1217,7 @@ exercise(el, data, exId) {
     var qd=u.quitDate?new Date(u.quitDate):null;
     var ds=qd?Math.max(0,Math.floor((Date.now()-qd)/86400000)):0;
     var totalExAll=LEVELS.reduce(function(s,l){return s+l.exercises.length;},0);
-    body='<div class="card" style="margin-bottom:16px;text-align:center;background:linear-gradient(135deg,#F0FFF8,#EBF4FF)">'
+    body='<div class="card" style="margin-bottom:16px;text-align:center;background:linear-gradient(150deg,#ffffff,#f0faf4)">'
       +'<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:16px">ТВОЙ ПУТЬ</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">'
       +'<div><div style="font-size:36px;font-weight:900;color:var(--green)">'+ds+'</div><div style="color:var(--text2);font-size:12px">чистых дней</div></div>'
@@ -1249,9 +1279,16 @@ urgeHelp(el, data) {
       el.innerHTML = '<div class="screen screen-full" style="background:linear-gradient(135deg,#FFF3E0,#FFEBEE);min-height:100dvh">'
         + '<div style="text-align:center;padding:16px 0 12px"><div style="font-size:48px">🆘</div>'
         + '<h2 style="font-size:24px;font-weight:800;margin-top:8px">Помощь при тяге</h2>'
-        + '<p style="color:var(--text2);font-size:15px;margin-top:6px">Что ты сейчас чувствуешь?</p></div>'
+        + '</div>'
+        + '<div style="padding:0 16px 14px">'
+        + '<div class="card" role="button" style="cursor:pointer;background:var(--accent-grad);color:#fff;display:flex;align-items:center;gap:14px;border:none" onclick="App.navigate(\'breathing\')">'
+        + '<div style="font-size:30px">💨</div>'
+        + '<div style="flex:1;text-align:left"><div style="font-weight:800;font-size:17px">Просто дышать</div>'
+        + '<div style="font-size:13px;opacity:.9">Не нужно ничего выбирать · 1 минута</div></div>'
+        + '<div style="font-size:20px;opacity:.8">›</div></div></div>'
+        + '<p style="color:var(--text2);font-size:14px;text-align:center;margin-bottom:10px">…или разберём, что именно происходит:</p>'
         + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-        + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','"Мне нужна затяжка"'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
+        + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','«Мне нужен стик»'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
             return '<div class="card urge-type-card" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:32px">'+t[1]+'</div><div style="font-weight:700;font-size:16px">'+t[2]+'</div><div style="color:var(--text2);font-size:13px">'+t[3]+'</div></div>';
           }).join('')
         + '</div>'
@@ -1289,7 +1326,7 @@ urgeHelp(el, data) {
           var letter = data.user.letterToSelf;
           return '<p style="font-size:16px;font-weight:700;margin-bottom:12px">Прежде чем взять устройство — сделай это:</p>'
             + ep.map(function(t,i){return '<div class="card card-sm" style="margin-bottom:8px;display:flex;align-items:center;gap:12px"><div style="width:28px;height:28px;border-radius:50%;background:var(--orange-light);color:var(--orange);font-weight:700;display:flex;align-items:center;justify-content:center">'+(i+1)+'</div><div style="font-size:14px">'+t+'</div></div>';}).join('')
-            + (letter ? '<div class="card" style="margin-top:12px;background:linear-gradient(135deg,#EBF4FF,#F0FFF8);border-color:rgba(91,141,239,.2)">'
+            + (letter ? '<div class="card" style="margin-top:12px;background:linear-gradient(150deg,#ffffff,#f0faf4);border-color:rgba(31,157,107,.2)">'
               +'<div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px">✉️ ПИСЬМО СЕБЕ</div>'
               +'<div style="font-size:14px;line-height:1.6;color:var(--text)">'+letter+'</div></div>' : '');
         })()
@@ -1322,7 +1359,7 @@ urgeHelp(el, data) {
           i.value=''; // clear — releasing is the point
         }
       };      setTimeout(function(){
-        document.querySelectorAll('._semo').forEach(function(b){var msgs={'Тревога':'Тревога пытается тебя защитить. Но ты в безопасности прямо сейчас.','Стресс':'Стресс — сигнал важности. Вейп не снимет стресс, но ты справишься.','Скука':'Скука — не чрезвычайная ситуация. Она пройдёт за 3 минуты.','Грусть':'Позволь грусти быть. Она не требует действий.','Злость':'Злость — энергия. Выдохни её. Не вейп её.','Одиночество':'Напиши кому-нибудь прямо сейчас. Связь сильнее никотина.'};
+        document.querySelectorAll('._semo').forEach(function(b){var msgs={'Тревога':'Тревога пытается тебя защитить. Но ты в безопасности прямо сейчас.','Стресс':'Стресс — сигнал важности. Стик не снимет стресс, но ты справишься.','Скука':'Скука — не чрезвычайная ситуация. Она пройдёт за 3 минуты.','Грусть':'Позволь грусти быть. Она не требует действий.','Злость':'Злость — энергия. Выдохни её. Не кури её.','Одиночество':'Напиши кому-нибудь прямо сейчас. Связь сильнее никотина.'};
           b.onclick=function(){document.querySelectorAll('._semo').forEach(function(x){x.classList.remove('on');});b.classList.add('on');var r=document.getElementById('se-r');if(r){r.style.display='block';r.textContent=msgs[b.dataset.e]||'Это нормально. Это пройдёт.';}};
         });
       },100);
@@ -1420,11 +1457,14 @@ tracker(el, data) {
       // ── Date switcher ──
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
       + '<div role="button" onclick="window._dayShift(-1)" style="width:38px;height:38px;flex-shrink:0;border-radius:12px;background:#fff;border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text2);cursor:pointer">‹</div>'
-      + '<input type="date" id="tracker-date" value="'+selectedDateKey+'" max="'+todayKey+'" onchange="window._dateChange(this.value)" style="flex:1;text-align:center;padding:9px 8px;border-radius:12px;border:1px solid var(--glass-border);background:#fff;font-size:14px;font-weight:600;color:var(--text)">'
+      + '<label style="flex:1;position:relative;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 8px;border-radius:12px;border:1px solid var(--glass-border);background:#fff;font-size:14px;font-weight:600;color:var(--text);cursor:pointer">'
+      + '<span>' + fmtDateRu(selectedDateKey) + '</span><span style="font-size:13px;color:var(--text3)">▾</span>'
+      + '<input type="date" id="tracker-date" value="'+selectedDateKey+'" max="'+todayKey+'" onchange="window._dateChange(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;border:none;cursor:pointer">'
+      + '</label>'
       + '<div role="button" onclick="window._dayShift(1)" style="width:38px;height:38px;flex-shrink:0;border-radius:12px;background:#fff;border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:17px;'+(isToday?'opacity:.35;pointer-events:none':'cursor:pointer')+';color:var(--text2)">›</div>'
       + '</div>'
       + (isToday ? '' : '<div style="text-align:center;margin-bottom:10px"><span role="button" onclick="window._dateChange(\''+todayKey+'\')" style="font-size:13px;color:var(--accent);cursor:pointer;font-weight:600">← Вернуться к сегодня</span></div>')
-      + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px;text-align:center">' + new Date(selectedDateKey+'T12:00:00').toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'}) + (isToday?' · сегодня':'') + '</p>'
+      + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px;text-align:center">' + new Date(selectedDateKey+'T12:00:00').toLocaleDateString('ru',{weekday:'long'}) + (isToday?' · сегодня':'') + '</p>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">СТИКОВ</div>'
       + '<div style="display:flex;align-items:center;justify-content:center;gap:24px">'
@@ -1459,9 +1499,9 @@ tracker(el, data) {
       + '</div></div>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАМЕТКА О ДНЕ (НЕОБЯЗАТЕЛЬНО)</div>'
-      + '<textarea class="input" id="day-note" placeholder="Как прошёл день?" style="height:80px;resize:none;display:block;line-height:1.5" rows="3">'+(dayLog.note||'')+'</textarea></div>'
-      + '<button class="btn-primary" onclick="window._saveDay()">💾 Сохранить</button>'
-      + '<p style="font-size:12px;color:var(--text3);text-align:center;margin-top:8px">Записи можно посмотреть в Дневнике → вкладка «Дни»</p>'
+      + '<textarea class="input" id="day-note" placeholder="Как прошёл день?" style="height:80px;resize:none;display:block;line-height:1.5" rows="3">'+(dayLog.note||'')+'</textarea>'
+      + '<div id="note-status" style="font-size:12px;color:var(--text3);margin-top:8px;min-height:16px">Сохраняется автоматически</div></div>'
+      + '<p style="font-size:12px;color:var(--text3);text-align:center;margin-top:4px">Записи можно посмотреть в Дневнике → вкладка «Дни»</p>'
       + '</div>';
 
     window._dateChange = function(newDate) {
@@ -1498,6 +1538,7 @@ tracker(el, data) {
           _persist(selectedDateKey, curPuffs, fresh.mood || 3, fresh.note || '', curStickLog);
           editingIndex = null;
           render();
+          if (curPuffs === 0) { var m = document.getElementById('cday-msg'); if (m) confetti(m); }
         }
       }
     };
@@ -1541,16 +1582,32 @@ tracker(el, data) {
       render();
     };
 
-    window._saveDay = function() {
-      var noteEl = document.getElementById('day-note');
-      var noteVal = noteEl ? noteEl.value : '';
-      var fresh = getDayLog(selectedDateKey);
-      _persist(selectedDateKey, fresh.puffs || 0, fresh.mood || 3, noteVal, fresh.stickLog || []);
-      Toast.show('✅ Сохранено','success');
-      if ((fresh.puffs||0)===0) { var m = document.getElementById('cday-msg'); if (m) confetti(m); }
-      var newAchs = Storage.checkAndUnlockAchievements();
-      newAchs.forEach(function(a){ Toast.show(a.emoji+' '+a.name,'success'); });
-    };
+    // Заметка сохраняется сама — отдельная кнопка не нужна
+    var noteEl = document.getElementById('day-note');
+    if (noteEl) {
+      var saveNote = function() {
+        var fresh = getDayLog(selectedDateKey);
+        if ((fresh.note || '') === noteEl.value) return;
+        _persist(selectedDateKey, fresh.puffs || 0, fresh.mood || 3, noteEl.value, fresh.stickLog || []);
+        var st = document.getElementById('note-status');
+        if (st) {
+          st.textContent = '✓ Сохранено';
+          st.style.color = 'var(--accent)';
+          clearTimeout(window._noteStatusT);
+          window._noteStatusT = setTimeout(function(){
+            st.textContent = 'Сохраняется автоматически';
+            st.style.color = 'var(--text3)';
+          }, 1600);
+        }
+        var newAchs = Storage.checkAndUnlockAchievements();
+        newAchs.forEach(function(a){ Toast.show(a.emoji+' '+a.name,'success'); });
+      };
+      noteEl.addEventListener('input', function(){
+        clearTimeout(window._noteSaveT);
+        window._noteSaveT = setTimeout(saveNote, 700);
+      });
+      noteEl.addEventListener('blur', function(){ clearTimeout(window._noteSaveT); saveNote(); });
+    }
   }
   render();
 },
@@ -1567,12 +1624,35 @@ stats(el, data) {
   }
   var values = days.map(function(x){ return x.puffs===null ? null : +x.puffs; }).filter(function(v){ return v!==null; });
   var maxPuffs = Math.max(1, ...values, +(u.dailyPuffs || 1));
-  var points = days.map(function(d, idx){
-    var val = d.puffs===null ? 0 : +d.puffs;
-    var x = Math.round((idx / 29) * 300);
-    var y = Math.round(120 - (val / maxPuffs) * 100);
-    return x + ',' + y;
-  }).join(' ');
+  // Строим ломаную сегментами: дни без записей — разрыв, а не ноль
+  var CH = { x0:30, x1:312, y0:12, y1:104 };
+  var chartX = function(idx){ return CH.x0 + (idx/29)*(CH.x1-CH.x0); };
+  var chartY = function(v){ return CH.y1 - (v/maxPuffs)*(CH.y1-CH.y0); };
+  var segments = [], cur = [], dots = '';
+  days.forEach(function(d, idx){
+    if (d.puffs === null || d.puffs === undefined) { if (cur.length) { segments.push(cur); cur = []; } return; }
+    var x = chartX(idx), y = chartY(+d.puffs);
+    cur.push(x.toFixed(1) + ',' + y.toFixed(1));
+    dots += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(+d.puffs===0?2.6:2.2)+'" fill="'+(+d.puffs===0?'var(--accent)':'var(--blue)')+'"/>';
+  });
+  if (cur.length) segments.push(cur);
+  var polylines = segments.map(function(seg){
+    return seg.length === 1
+      ? ''
+      : '<polyline points="'+seg.join(' ')+'" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  }).join('');
+  // Сетка и подписи оси Y
+  var yTicks = [0, Math.round(maxPuffs/2), maxPuffs].filter(function(v,i,a){ return a.indexOf(v)===i; });
+  var grid = yTicks.map(function(v){
+    var y = chartY(v).toFixed(1);
+    return '<line x1="'+CH.x0+'" y1="'+y+'" x2="'+CH.x1+'" y2="'+y+'" stroke="rgba(20,36,28,.08)" stroke-width="1"/>'
+      + '<text x="'+(CH.x0-6)+'" y="'+(+y+3.5).toFixed(1)+'" text-anchor="end" style="font-size:9px;fill:var(--text3)">'+v+'</text>';
+  }).join('');
+  // Пунктир — дневная норма
+  var goalLine = (u.dailyPuffs && u.dailyPuffs <= maxPuffs)
+    ? '<line x1="'+CH.x0+'" y1="'+chartY(u.dailyPuffs).toFixed(1)+'" x2="'+CH.x1+'" y2="'+chartY(u.dailyPuffs).toFixed(1)+'" stroke="var(--orange)" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>'
+    : '';
+  var hasChartData = days.some(function(d){ return d.puffs !== null && d.puffs !== undefined; });
   var totalCr = { body:0, emotion:0, thought:0, situation:0 };
   days.forEach(function(d){ d.cravings.forEach(function(c){ if(totalCr[c.type]!==undefined) totalCr[c.type]++; }); });
   var totalCrCount = totalCr.body + totalCr.emotion + totalCr.thought + totalCr.situation;
@@ -1611,19 +1691,31 @@ stats(el, data) {
   el.innerHTML = '<div class="screen">'
     + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">📊 Статистика</h2>'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">Последние 30 дней прогресса</p>'
-    + '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАТЯЖКИ ПО ДНЯМ</div>'
-    + '<svg viewBox="0 0 300 130" style="width:100%;height:130px;background:var(--bg);border-radius:10px"><line x1="0" y1="120" x2="300" y2="120" stroke="#ddd" />'
-    + '<polyline points="'+points+'" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>'
-    + '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text3)"><span>30 дней назад</span><span>Сегодня</span></div></div>'
+    + '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">СТИКИ ПО ДНЯМ</div>'
+    + (hasChartData
+        ? '<svg viewBox="0 0 320 118" style="width:100%;height:132px;background:var(--bg);border-radius:10px;display:block">'
+          + grid + goalLine + polylines + dots
+          + '</svg>'
+          + '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text3)"><span>30 дней назад</span><span>Сегодня</span></div>'
+          + '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:var(--text3)">'
+          + '<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);vertical-align:middle;margin-right:4px"></span>чистый день</span>'
+          + (u.dailyPuffs && u.dailyPuffs<=maxPuffs ? '<span><span style="display:inline-block;width:12px;border-top:1px dashed var(--orange);vertical-align:middle;margin-right:4px"></span>норма '+u.dailyPuffs+'</span>' : '')
+          + '<span>разрыв — нет записи</span>'
+          + '</div>'
+        : '<div style="text-align:center;padding:24px 8px;color:var(--text3);font-size:13px">Пока нет записей.<br>Отмечай стики в Трекере — здесь появится график.</div>')
+    + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    + '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+(p.consecutiveSmokeFree||0)+'</div><div class="stat-label">Серия без вейпа</div></div>'
+    + '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+(p.consecutiveSmokeFree||0)+'</div><div class="stat-label">Серия без стиков</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">'+(p.longestStreak||0)+'</div><div class="stat-label">Лучший результат</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--orange)">'+avgPuffs+'</div><div class="stat-label">Среднее / день</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--purple)">'+avgCraving+'</div><div class="stat-label">Ср. тяга (1-10)</div></div>'
     + '</div>'
     + '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ТИПЫ ТРИГГЕРОВ</div>'
-    + '<div style="display:flex;align-items:center;gap:14px"><svg viewBox="0 0 128 128" width="128" height="128">'+piePaths+'<circle cx="64" cy="64" r="30" fill="white"></circle><text x="64" y="68" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#666">'+totalCrCount+'</text></svg>'
-    + '<div style="display:flex;flex-direction:column;gap:6px">'+legends+'</div></div></div>'
+    + (totalCrCount
+        ? '<div style="display:flex;align-items:center;gap:14px"><svg viewBox="0 0 128 128" width="128" height="128">'+piePaths+'<circle cx="64" cy="64" r="30" fill="#fff"></circle><text x="64" y="68" text-anchor="middle" style="font-size:14px;font-weight:700;fill:var(--text2)">'+totalCrCount+'</text></svg>'
+          + '<div style="display:flex;flex-direction:column;gap:6px">'+legends+'</div></div>'
+        : '<div style="text-align:center;padding:20px 8px;color:var(--text3);font-size:13px">Пока нет записей о тяге.<br>Нажми <b>SOS</b> в момент тяги — здесь появится разбор триггеров.</div>')
+    + '</div>'
     + '<div class="card"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ПРОГРЕСС УРОВНЕЙ</div>'
     + '<div class="pbar" style="margin-bottom:8px"><div class="pbar-fill" style="width:'+Math.round((current/Math.max(1,totalEx))*100)+'%"></div></div>'
     + '<div style="font-size:13px;color:var(--text2)">'+(u.currentLevel||1)+' / 8 уровней · '+current+' / '+totalEx+' упражнений</div></div>'
@@ -1691,7 +1783,7 @@ health(el, data) {
   var u = data.user, p = data.progress;
   var quitDate = u.quitDate ? new Date(u.quitDate) : null;
   var now = new Date();
-  var minsSinceQuit = quitDate ? Math.max(0,Math.floor((now-quitDate)/60000)) : 0;
+  var minsSinceQuit = Math.max(0, Math.floor((now.getTime() - getLastSmokeMs(data))/60000));
   el.innerHTML = '<div class="screen">'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Что происходит в твоём теле</p>'
     + (!u.quitDate?'<div class="card" style="background:var(--orange-light);border-color:rgba(245,166,35,.2);margin-bottom:16px;color:var(--orange)">Установи дату отказа в настройках чтобы видеть прогресс</div>':'')
@@ -1769,7 +1861,7 @@ savings(el, data) {
     var daysSince = quitDate ? Math.max(0,Math.floor((new Date()-quitDate)/86400000)) : 0;
     el.innerHTML = '<div class="screen">'
       + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Деньги, которые остались с тобой</p>'
-      + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,rgba(42,171,238,.12),rgba(123,97,255,.10))">'
+      + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(150deg,#ffffff,#f0faf4);border-color:rgba(31,157,107,.18)">'
       + '<div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px">УЖЕ СЭКОНОМЛЕНО</div>'
       + '<div style="font-size:48px;font-weight:900;color:var(--green)">€'+(saved<10?saved.toFixed(2):Math.round(saved))+'</div>'
       + '<div style="color:var(--text2);font-size:14px;margin-top:4px">за '+fmtDays(daysSince)+'</div>'
@@ -1856,7 +1948,7 @@ journal(el, data) {
         +'<div style="font-size:13px;font-weight:600">'+(typeLabels[j.type]||'Запись')+'</div>'
         +'<div style="font-size:11px;color:var(--text3)">'+d.toLocaleDateString('ru')+' '+time+'</div></div>'
         +(j.intensity?'<div style="color:var(--text2);font-size:12px;margin-top:4px">Интенсивность: '+j.intensity+'/10</div>':'')
-        +(j.note?'<div style="color:var(--text);font-size:13px;margin-top:6px;font-style:italic;line-height:1.4">«'+j.note+'»</div>':'')
+        +(j.note?'<div style="color:var(--text);font-size:13px;margin-top:6px;font-style:italic;line-height:1.4">'+quoteText(j.note)+'</div>':'')
         +'<div style="font-size:12px;margin-top:6px;padding:3px 10px;border-radius:10px;display:inline-block;background:'+(j.result==='won'?'var(--green-light)':'var(--red-light)')+';color:'+(j.result==='won'?'var(--accent2)':'var(--red)')+';font-weight:600">'+(j.result==='won'?'✓ Справился':'Использовал')+'</div>'
         +'</div>';
     }).join('');
@@ -1907,7 +1999,7 @@ journal(el, data) {
         + (log.mood ? '<span style="font-size:18px">'+moodEmojis[log.mood]+'</span>' : '')
         + '<span style="font-size:13px;font-weight:700;color:'+puffsColor+'">'+(log.puffs===0?'🎉 Чистый день':log.puffs+' 🚬')+'</span>'
         + '</div></div>'
-        + (log.note ? '<div style="font-size:13px;color:var(--text);font-style:italic;line-height:1.4;margin-bottom:'+(stickLog.length?'8':'0')+'px">«'+log.note+'»</div>' : '')
+        + (log.note ? '<div style="font-size:13px;color:var(--text);font-style:italic;line-height:1.4;margin-bottom:'+(stickLog.length?'8':'0')+'px">'+quoteText(log.note)+'</div>' : '')
         + (stickLog.length
             ? '<div style="border-top:1px solid var(--border);padding-top:6px">'
               + stickLog.map(function(s){
@@ -1999,17 +2091,31 @@ settings(el, data) {
   var u = data.user;
   var s = data.settings || { notifications: false, reminderTime: '20:00' };
   el.innerHTML = '<div class="screen">'
-    + '<button onclick="App.back()" style="color:var(--text2);font-size:14px;margin-bottom:16px">← Назад</button>'
     + '<h2 style="font-size:22px;font-weight:800;margin-bottom:20px">⚙️ Настройки</h2>'
     + '<div class="card" style="margin-bottom:12px">'
     + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">ПРОФИЛЬ</div>'
     + '<div class="input-group"><label class="input-label">ИМЯ</label><input class="input" id="s-name" value="'+(u.name||'')+'"></div>'
-    + '<div class="input-group"><label class="input-label">ДАТА ОТКАЗА</label><input class="input" id="s-date" type="date" value="'+(u.quitDate?u.quitDate.split('T')[0]:'')+'"></div>'
+    + '<div class="input-group"><label class="input-label">ДАТА ОТКАЗА</label>'
+    + '<label style="position:relative;display:flex;align-items:center;justify-content:space-between;cursor:pointer" class="input">'
+    + '<span>' + (u.quitDate ? fmtDateRu(u.quitDate.split('T')[0]) : 'не выбрана') + '</span><span style="color:var(--text3)">▾</span>'
+    + '<input id="s-date" type="date" value="'+(u.quitDate?u.quitDate.split('T')[0]:'')+'" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;border:none;cursor:pointer">'
+    + '</label></div>'
     + '<div class="input-group"><label class="input-label">МЕТОД</label><select class="input" id="s-method"><option value="cold" '+(u.quitMethod==='cold'?'selected':'')+'>Резкий отказ</option><option value="gradual" '+(u.quitMethod==='gradual'?'selected':'')+'>Постепенное снижение</option></select></div>'
     + '<div class="input-group"><label class="input-label">СНИЖЕНИЕ В НЕДЕЛЮ (%)</label><input class="input" id="s-grad" type="number" min="10" max="30" step="5" value="'+(u.gradualReductionPct||20)+'"></div>'
     + '<div class="input-group"><label class="input-label">ЦЕНА ПАЧКИ (€)</label><input class="input" id="s-cost" type="number" step="0.01" min="0" value="'+(u.packPrice||u.dailyCost||6.50)+'"></div>'
     + '<div class="input-group"><label class="input-label">СТИКОВ В ПАЧКЕ</label><input class="input" id="s-packsize" type="number" value="'+(u.packSize||20)+'"></div>'
     + '<div class="input-group" style="margin:0"><label class="input-label">СТИКОВ/ДЕНЬ</label><input class="input" id="s-puffs" type="number" value="'+(u.dailyPuffs||20)+'"></div>'
+    + '</div>'
+    + '<div class="card" style="margin-bottom:12px">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px">МОИ ЦЕННОСТИ</div>'
+    + '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Ради чего ты бросаешь. Выбери 1–3.</div>'
+    + VALUES.map(function(v){
+        var on = (u.values||[]).indexOf(v.id) !== -1;
+        return '<div class="value-card _sval'+(on?' on':'')+'" data-id="'+v.id+'" style="margin-bottom:8px">'
+          + '<div style="font-size:22px">'+v.emoji+'</div>'
+          + '<div style="flex:1;font-size:15px;font-weight:600">'+v.name+'</div>'
+          + '<div style="color:'+(on?'var(--accent)':'var(--text3)')+';font-size:18px">'+(on?'✓':'')+'</div></div>';
+      }).join('')
     + '</div>'
     + '<div class="card" style="margin-bottom:12px">'
     + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">УВЕДОМЛЕНИЯ</div>'
@@ -2061,8 +2167,24 @@ settings(el, data) {
     }
     var apiKey = (document.getElementById('s-apikey')||{}).value || '';
     Storage.saveAIKey(apiKey.trim());
+    var picked = [];
+    document.querySelectorAll('._sval.on').forEach(function(x){ picked.push(x.dataset.id); });
+    if (picked.length) Storage.updateUser({ values: picked });
     Toast.show('✅ Сохранено','success');
   };
+  document.querySelectorAll('._sval').forEach(function(card){
+    card.onclick = function(){
+      var on = card.classList.contains('on');
+      if (!on && document.querySelectorAll('._sval.on').length >= 3) {
+        Toast.show('Не больше трёх ценностей','warn'); return;
+      }
+      card.classList.toggle('on');
+      var mark = card.lastElementChild;
+      var nowOn = card.classList.contains('on');
+      mark.textContent = nowOn ? '✓' : '';
+      mark.style.color = nowOn ? 'var(--accent)' : 'var(--text3)';
+    };
+  });
   window._exportData=function(){
     var payload = Storage.get() || {};
     var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
