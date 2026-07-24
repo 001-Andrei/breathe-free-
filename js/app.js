@@ -1367,35 +1367,66 @@ urgeHelp(el, data) {
 },
 
 tracker(el, data) {
-  var u = data.user, logs = data.dailyLogs;
+  var u = data.user;
   var todayKey = today();
-  var todayLog = logs[todayKey] || {puffs:0,mood:3,cravings:[],note:'',stickLog:[]};
-  var puffs = todayLog.puffs;
-  var mood = todayLog.mood || 3;
-  var stickLog = (todayLog.stickLog || []).slice();
-  var isGradual = u.quitMethod === 'gradual';
-  var goalPuffs = isGradual ? Storage.getGradualGoalForDate(todayKey, u) : 0;
-  var moodEmojis = ['😢','😔','😐','🙂','😄'];
-  var showNoteInput = false;
+  var selectedDateKey = todayKey;
+  var editingIndex = null; // index into stickLog being added/edited via inline editor, or null
 
-  function _persist() {
-    var curNote = (document.getElementById('day-note') || {}).value;
-    if (curNote === undefined) curNote = todayLog.note || '';
-    Storage.logDay(todayKey, puffs, mood, curNote);
+  function nowHM() {
+    var n = new Date();
+    return ('0'+n.getHours()).slice(-2) + ':' + ('0'+n.getMinutes()).slice(-2);
+  }
+
+  function getDayLog(dateKey) {
+    var d = Storage.get() || Storage.init();
+    return d.dailyLogs[dateKey] || {puffs:0,mood:3,cravings:[],note:'',stickLog:[]};
+  }
+
+  function _persist(dateKey, puffs, mood, note, stickLog) {
+    Storage.logDay(dateKey, puffs, mood, note);
     var d = Storage.get();
     if (d) {
-      if (!d.dailyLogs[todayKey]) d.dailyLogs[todayKey] = {puffs:0,mood:3,cravings:[],note:'',stickLog:[]};
-      d.dailyLogs[todayKey].stickLog = stickLog;
+      if (!d.dailyLogs[dateKey]) d.dailyLogs[dateKey] = {puffs:0,mood:3,cravings:[],note:'',stickLog:[]};
+      d.dailyLogs[dateKey].stickLog = stickLog;
       Storage.save(d);
     }
   }
 
   function render() {
+    var dayLog = getDayLog(selectedDateKey);
+    var puffs = dayLog.puffs || 0;
+    var mood = dayLog.mood || 3;
+    var stickLog = (dayLog.stickLog || []).slice();
+    var isGradual = u.quitMethod === 'gradual';
+    var goalPuffs = isGradual ? Storage.getGradualGoalForDate(selectedDateKey, u) : 0;
+    var moodEmojis = ['😢','😔','😐','🙂','😄'];
+    var isToday = selectedDateKey === todayKey;
     var col = puffs===0?'var(--green)':puffs<=u.dailyPuffs*.5?'var(--blue)':puffs<=u.dailyPuffs?'var(--orange)':'var(--red)';
+
+    function editorHtml(idx) {
+      var entry = stickLog[idx];
+      var timeVal = entry ? new Date(entry.time).toTimeString().slice(0,5) : nowHM();
+      var noteVal = entry ? (entry.note || '') : '';
+      return '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">'
+        + '<div style="font-size:12px;color:var(--text2);margin-bottom:6px">Время и причина (необязательно):</div>'
+        + '<div style="display:flex;gap:8px">'
+        + '<input class="input" id="stick-time-inp" type="time" value="'+timeVal+'" style="width:110px;height:38px;padding:6px 8px;font-size:14px">'
+        + '<input class="input" id="stick-note-inp" placeholder="стресс, скука, компания..." value="'+noteVal.replace(/"/g,'&quot;')+'" style="flex:1;min-width:0;height:38px;padding:6px 10px;font-size:14px">'
+        + '<button onclick="window._confirmStickNote()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:0 16px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0">OK</button>'
+        + '</div></div>';
+    }
+
     el.innerHTML = '<div class="screen">'
-      + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">' + new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'}) + '</p>'
+      // ── Date switcher ──
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+      + '<div role="button" onclick="window._dayShift(-1)" style="width:38px;height:38px;flex-shrink:0;border-radius:12px;background:#fff;border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text2);cursor:pointer">‹</div>'
+      + '<input type="date" id="tracker-date" value="'+selectedDateKey+'" max="'+todayKey+'" onchange="window._dateChange(this.value)" style="flex:1;text-align:center;padding:9px 8px;border-radius:12px;border:1px solid var(--glass-border);background:#fff;font-size:14px;font-weight:600;color:var(--text)">'
+      + '<div role="button" onclick="window._dayShift(1)" style="width:38px;height:38px;flex-shrink:0;border-radius:12px;background:#fff;border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:17px;'+(isToday?'opacity:.35;pointer-events:none':'cursor:pointer')+';color:var(--text2)">›</div>'
+      + '</div>'
+      + (isToday ? '' : '<div style="text-align:center;margin-bottom:10px"><span role="button" onclick="window._dateChange(\''+todayKey+'\')" style="font-size:13px;color:var(--accent);cursor:pointer;font-weight:600">← Вернуться к сегодня</span></div>')
+      + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px;text-align:center">' + new Date(selectedDateKey+'T12:00:00').toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'}) + (isToday?' · сегодня':'') + '</p>'
       + '<div class="card" style="margin-bottom:12px">'
-      + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">СТИКОВ СЕГОДНЯ</div>'
+      + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px">СТИКОВ</div>'
       + '<div style="display:flex;align-items:center;justify-content:center;gap:24px">'
       + '<button class="counter-btn" onclick="window._adj(-1)">−</button>'
       + '<div style="text-align:center"><div style="font-size:56px;font-weight:900;color:'+col+';line-height:1">'+puffs+'</div>'
@@ -1404,24 +1435,18 @@ tracker(el, data) {
       + '</div>'
       + (puffs===0?'<div style="margin-top:16px;padding:12px;background:var(--green-light);border-radius:12px;color:var(--accent2);font-weight:700;text-align:center;font-size:15px" id="cday-msg">🎉 Чистый день!</div>':'')
       + (isGradual&&goalPuffs!==null?'<div class="pbar" style="margin-top:12px"><div class="pbar-fill" style="width:'+Math.max(0,Math.min(100,Math.round(((goalPuffs-puffs)/Math.max(1,goalPuffs))*100)))+'%"></div></div><div style="font-size:12px;color:var(--text3);margin-top:6px;text-align:center">Цель дня: не более '+goalPuffs+' стиков</div>':'')
-      + (showNoteInput
-          ? '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">'
-            + '<div style="font-size:12px;color:var(--text2);margin-bottom:6px">Причина (необязательно):</div>'
-            + '<div style="display:flex;gap:8px">'
-            + '<input class="input" id="stick-note-inp" placeholder="стресс, скука, компания..." style="flex:1;height:38px;padding:6px 10px;font-size:14px">'
-            + '<button onclick="window._confirmStickNote()" style="background:var(--blue);color:#fff;border:none;border-radius:10px;padding:0 16px;font-size:14px;font-weight:600;cursor:pointer">OK</button>'
-            + '</div></div>'
-          : '')
+      + (editingIndex !== null ? editorHtml(editingIndex) : '')
       + '</div>'
       + (stickLog.length
           ? '<div class="card" style="margin-bottom:12px">'
-            + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАПИСИ СЕГОДНЯ</div>'
+            + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАПИСИ ЗА ДЕНЬ</div>'
             + stickLog.map(function(s,i){
                 var t = new Date(s.time).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
                 return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0'+(i<stickLog.length-1?';border-bottom:1px solid var(--border)':'')+'">'
                   + '<span style="font-size:18px">🚬</span>'
                   + '<div style="flex:1;min-width:0"><span style="font-size:12px;color:var(--text3)">'+t+'</span>'
                   + (s.note?'<span style="font-size:13px;color:var(--text);margin-left:6px">'+s.note+'</span>':'')+'</div>'
+                  + '<button onclick="window._editStick('+i+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 6px;line-height:1">✎</button>'
                   + '<button onclick="window._delStick('+i+')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px;line-height:1">×</button>'
                   + '</div>';
               }).join('')
@@ -1434,62 +1459,98 @@ tracker(el, data) {
       + '</div></div>'
       + '<div class="card" style="margin-bottom:12px">'
       + '<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАМЕТКА О ДНЕ (НЕОБЯЗАТЕЛЬНО)</div>'
-      + '<textarea class="input" id="day-note" placeholder="Как прошёл день?" style="height:80px;resize:none;display:block;line-height:1.5" rows="3">'+(todayLog.note||'')+'</textarea></div>'
+      + '<textarea class="input" id="day-note" placeholder="Как прошёл день?" style="height:80px;resize:none;display:block;line-height:1.5" rows="3">'+(dayLog.note||'')+'</textarea></div>'
       + '<button class="btn-primary" onclick="window._saveDay()">💾 Сохранить</button>'
       + '<p style="font-size:12px;color:var(--text3);text-align:center;margin-top:8px">Записи можно посмотреть в Дневнике → вкладка «Дни»</p>'
       + '</div>';
 
+    window._dateChange = function(newDate) {
+      if (!newDate || newDate > todayKey) return;
+      selectedDateKey = newDate;
+      editingIndex = null;
+      render();
+    };
+
+    window._dayShift = function(delta) {
+      var d = new Date(selectedDateKey + 'T12:00:00');
+      d.setDate(d.getDate() + delta);
+      var newKey = d.toISOString().split('T')[0];
+      if (newKey > todayKey) return;
+      selectedDateKey = newKey;
+      editingIndex = null;
+      render();
+    };
+
     window._adj = function(delta) {
+      var fresh = getDayLog(selectedDateKey);
+      var curPuffs = fresh.puffs || 0;
+      var curStickLog = (fresh.stickLog || []).slice();
       if (delta > 0) {
-        puffs++;
-        stickLog.push({time: new Date().toISOString(), note: ''});
-        showNoteInput = true;
-        _persist();
+        curPuffs++;
+        var t = isToday ? new Date().toISOString() : (selectedDateKey + 'T' + nowHM() + ':00');
+        curStickLog.push({time: t, note: ''});
+        _persist(selectedDateKey, curPuffs, fresh.mood || 3, fresh.note || '', curStickLog);
+        editingIndex = curStickLog.length - 1;
         render();
-        var ni = document.getElementById('stick-note-inp');
-        if (ni) { ni.focus(); }
+        var ti = document.getElementById('stick-time-inp');
+        if (ti) { ti.focus(); }
       } else {
-        if (puffs > 0) {
-          puffs--;
-          if (stickLog.length > 0) stickLog.pop();
-          showNoteInput = false;
-          _persist();
+        if (curPuffs > 0) {
+          curPuffs--;
+          if (curStickLog.length > 0) curStickLog.pop();
+          _persist(selectedDateKey, curPuffs, fresh.mood || 3, fresh.note || '', curStickLog);
+          editingIndex = null;
           render();
         }
       }
     };
 
+    window._editStick = function(i) {
+      editingIndex = i;
+      render();
+      var ti = document.getElementById('stick-time-inp');
+      if (ti) { ti.focus(); }
+    };
+
     window._confirmStickNote = function() {
+      var ti = document.getElementById('stick-time-inp');
       var ni = document.getElementById('stick-note-inp');
-      var note = ni ? ni.value.trim() : '';
-      if (stickLog.length > 0) stickLog[stickLog.length-1].note = note;
-      _persist();
-      showNoteInput = false;
+      var timeVal = ti && ti.value ? ti.value : nowHM();
+      var noteVal = ni ? ni.value.trim() : '';
+      var fresh = getDayLog(selectedDateKey);
+      var curStickLog = (fresh.stickLog || []).slice();
+      if (editingIndex !== null && curStickLog[editingIndex]) {
+        curStickLog[editingIndex] = {time: selectedDateKey + 'T' + timeVal + ':00', note: noteVal};
+        curStickLog.sort(function(a,b){ return new Date(a.time) - new Date(b.time); });
+      }
+      _persist(selectedDateKey, fresh.puffs || 0, fresh.mood || 3, fresh.note || '', curStickLog);
+      editingIndex = null;
       render();
     };
 
     window._delStick = function(i) {
-      stickLog.splice(i, 1);
-      puffs = Math.max(0, puffs - 1);
-      showNoteInput = false;
-      _persist();
+      var fresh = getDayLog(selectedDateKey);
+      var curStickLog = (fresh.stickLog || []).slice();
+      curStickLog.splice(i, 1);
+      var curPuffs = Math.max(0, (fresh.puffs || 0) - 1);
+      editingIndex = null;
+      _persist(selectedDateKey, curPuffs, fresh.mood || 3, fresh.note || '', curStickLog);
       render();
     };
 
-    window._mood = function(m) { mood = m; render(); };
+    window._mood = function(m) {
+      var fresh = getDayLog(selectedDateKey);
+      _persist(selectedDateKey, fresh.puffs || 0, m, fresh.note || '', fresh.stickLog || []);
+      render();
+    };
 
     window._saveDay = function() {
-      var note = document.getElementById('day-note');
-      var noteVal = note ? note.value : '';
-      Storage.logDay(todayKey, puffs, mood, noteVal);
-      var d = Storage.get();
-      if (d) {
-        if (!d.dailyLogs[todayKey]) d.dailyLogs[todayKey] = {puffs:0,mood:3,cravings:[],note:'',stickLog:[]};
-        d.dailyLogs[todayKey].stickLog = stickLog;
-        Storage.save(d);
-      }
+      var noteEl = document.getElementById('day-note');
+      var noteVal = noteEl ? noteEl.value : '';
+      var fresh = getDayLog(selectedDateKey);
+      _persist(selectedDateKey, fresh.puffs || 0, fresh.mood || 3, noteVal, fresh.stickLog || []);
       Toast.show('✅ Сохранено','success');
-      if (puffs===0) { var m = document.getElementById('cday-msg'); if (m) confetti(m); }
+      if ((fresh.puffs||0)===0) { var m = document.getElementById('cday-msg'); if (m) confetti(m); }
       var newAchs = Storage.checkAndUnlockAchievements();
       newAchs.forEach(function(a){ Toast.show(a.emoji+' '+a.name,'success'); });
     };
