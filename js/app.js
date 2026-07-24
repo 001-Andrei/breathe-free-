@@ -129,6 +129,22 @@ function fmtDays(d) {
   if(d<5) return d + ' дня';
   return d + ' дней';
 }
+// Оборачивает текст в «», но не удваивает уже имеющиеся кавычки
+function quoteText(t) {
+  t = (t || '').trim();
+  if (!t) return '';
+  var first = t.charAt(0), last = t.charAt(t.length - 1);
+  if ((first === '«' && last === '»') || (first === '"' && last === '"')) return t;
+  return '«' + t + '»';
+}
+// «1 чистый день» / «2 чистых дня» / «5 чистых дней»
+function fmtCleanDays(d) {
+  var n = Math.abs(d) % 100, n1 = n % 10;
+  if (n > 10 && n < 20) return d + ' чистых дней';
+  if (n1 === 1) return d + ' чистый день';
+  if (n1 >= 2 && n1 <= 4) return d + ' чистых дня';
+  return d + ' чистых дней';
+}
 function today() { return new Date().toISOString().split('T')[0]; }
 function maybeSendDailyReminder(forceNow) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -746,7 +762,7 @@ levels(el, data) {
     var badgeCls = isDone?'done':isCur?'current':'locked';
     var pct = Math.round(doneCnt/lvl.exercises.length*100);
     var lockMsg = lvl.phase===2
-      ? (streak<7?'🔒 Нужно '+Math.max(0,7-streak)+' чистых дней подряд':'🔒 Завершите предыдущий уровень')
+      ? (streak<7?'🔒 Нужно '+fmtCleanDays(Math.max(0,7-streak))+' подряд':'🔒 Завершите предыдущий уровень')
       : '🔒 Завершите предыдущий уровень';
     return '<div class="'+cls+'" data-lvl="'+lvl.id+'" data-unlocked="'+(isUnlocked?1:0)+'">'
       +'<div style="display:flex;align-items:center;gap:14px">'
@@ -775,7 +791,7 @@ levels(el, data) {
   html += '<div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.5px;margin-top:16px;margin-bottom:6px">ФАЗА 2 — ЖИЗНЬ БЕЗ НИКОТИНА</div>';
   if(phase2StreakNeeded) {
     html += '<div class="card card-sm" style="margin-bottom:10px;background:linear-gradient(135deg,#FFF8E1,#FFF3E0)">'
-      +'<div style="font-size:13px;font-weight:600;color:var(--orange)">🔒 Разблокировка через '+(7-streak)+' чистых дней</div>'
+      +'<div style="font-size:13px;font-weight:600;color:var(--orange)">🔒 Разблокировка через '+fmtCleanDays(7-streak)+'</div>'
       +'<div class="pbar" style="margin-top:8px"><div class="pbar-fill" style="width:'+Math.round(streak/7*100)+'%;background:var(--orange)"></div></div>'
       +'<div style="font-size:11px;color:var(--text3);margin-top:4px">'+streak+' / 7 дней подряд</div>'
       +'</div>';
@@ -1251,7 +1267,7 @@ urgeHelp(el, data) {
         + '<h2 style="font-size:24px;font-weight:800;margin-top:8px">Помощь при тяге</h2>'
         + '<p style="color:var(--text2);font-size:15px;margin-top:6px">Что ты сейчас чувствуешь?</p></div>'
         + '<div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-        + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','"Мне нужна затяжка"'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
+        + [['body','🫀','Тело','Физические ощущения'],['emotion','💚','Эмоция','Стресс, тревога, скука'],['thought','💭','Мысль','«Мне нужен стик»'],['situation','🌍','Ситуация','Привычный контекст']].map(function(t){
             return '<div class="card urge-type-card" onclick="window._uType(\''+t[0]+'\')"><div style="font-size:32px">'+t[1]+'</div><div style="font-weight:700;font-size:16px">'+t[2]+'</div><div style="color:var(--text2);font-size:13px">'+t[3]+'</div></div>';
           }).join('')
         + '</div>'
@@ -1322,7 +1338,7 @@ urgeHelp(el, data) {
           i.value=''; // clear — releasing is the point
         }
       };      setTimeout(function(){
-        document.querySelectorAll('._semo').forEach(function(b){var msgs={'Тревога':'Тревога пытается тебя защитить. Но ты в безопасности прямо сейчас.','Стресс':'Стресс — сигнал важности. Вейп не снимет стресс, но ты справишься.','Скука':'Скука — не чрезвычайная ситуация. Она пройдёт за 3 минуты.','Грусть':'Позволь грусти быть. Она не требует действий.','Злость':'Злость — энергия. Выдохни её. Не вейп её.','Одиночество':'Напиши кому-нибудь прямо сейчас. Связь сильнее никотина.'};
+        document.querySelectorAll('._semo').forEach(function(b){var msgs={'Тревога':'Тревога пытается тебя защитить. Но ты в безопасности прямо сейчас.','Стресс':'Стресс — сигнал важности. Стик не снимет стресс, но ты справишься.','Скука':'Скука — не чрезвычайная ситуация. Она пройдёт за 3 минуты.','Грусть':'Позволь грусти быть. Она не требует действий.','Злость':'Злость — энергия. Выдохни её. Не кури её.','Одиночество':'Напиши кому-нибудь прямо сейчас. Связь сильнее никотина.'};
           b.onclick=function(){document.querySelectorAll('._semo').forEach(function(x){x.classList.remove('on');});b.classList.add('on');var r=document.getElementById('se-r');if(r){r.style.display='block';r.textContent=msgs[b.dataset.e]||'Это нормально. Это пройдёт.';}};
         });
       },100);
@@ -1611,12 +1627,12 @@ stats(el, data) {
   el.innerHTML = '<div class="screen">'
     + '<h2 style="font-size:22px;font-weight:800;margin-bottom:4px">📊 Статистика</h2>'
     + '<p style="color:var(--text2);font-size:14px;margin-bottom:16px">Последние 30 дней прогресса</p>'
-    + '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">ЗАТЯЖКИ ПО ДНЯМ</div>'
+    + '<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px">СТИКИ ПО ДНЯМ</div>'
     + '<svg viewBox="0 0 300 130" style="width:100%;height:130px;background:var(--bg);border-radius:10px"><line x1="0" y1="120" x2="300" y2="120" stroke="#ddd" />'
     + '<polyline points="'+points+'" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>'
     + '<div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text3)"><span>30 дней назад</span><span>Сегодня</span></div></div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    + '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+(p.consecutiveSmokeFree||0)+'</div><div class="stat-label">Серия без вейпа</div></div>'
+    + '<div class="stat-card"><div class="stat-val" style="color:var(--green)">'+(p.consecutiveSmokeFree||0)+'</div><div class="stat-label">Серия без стиков</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--blue)">'+(p.longestStreak||0)+'</div><div class="stat-label">Лучший результат</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--orange)">'+avgPuffs+'</div><div class="stat-label">Среднее / день</div></div>'
     + '<div class="stat-card"><div class="stat-val" style="color:var(--purple)">'+avgCraving+'</div><div class="stat-label">Ср. тяга (1-10)</div></div>'
@@ -1856,7 +1872,7 @@ journal(el, data) {
         +'<div style="font-size:13px;font-weight:600">'+(typeLabels[j.type]||'Запись')+'</div>'
         +'<div style="font-size:11px;color:var(--text3)">'+d.toLocaleDateString('ru')+' '+time+'</div></div>'
         +(j.intensity?'<div style="color:var(--text2);font-size:12px;margin-top:4px">Интенсивность: '+j.intensity+'/10</div>':'')
-        +(j.note?'<div style="color:var(--text);font-size:13px;margin-top:6px;font-style:italic;line-height:1.4">«'+j.note+'»</div>':'')
+        +(j.note?'<div style="color:var(--text);font-size:13px;margin-top:6px;font-style:italic;line-height:1.4">'+quoteText(j.note)+'</div>':'')
         +'<div style="font-size:12px;margin-top:6px;padding:3px 10px;border-radius:10px;display:inline-block;background:'+(j.result==='won'?'var(--green-light)':'var(--red-light)')+';color:'+(j.result==='won'?'var(--accent2)':'var(--red)')+';font-weight:600">'+(j.result==='won'?'✓ Справился':'Использовал')+'</div>'
         +'</div>';
     }).join('');
@@ -1907,7 +1923,7 @@ journal(el, data) {
         + (log.mood ? '<span style="font-size:18px">'+moodEmojis[log.mood]+'</span>' : '')
         + '<span style="font-size:13px;font-weight:700;color:'+puffsColor+'">'+(log.puffs===0?'🎉 Чистый день':log.puffs+' 🚬')+'</span>'
         + '</div></div>'
-        + (log.note ? '<div style="font-size:13px;color:var(--text);font-style:italic;line-height:1.4;margin-bottom:'+(stickLog.length?'8':'0')+'px">«'+log.note+'»</div>' : '')
+        + (log.note ? '<div style="font-size:13px;color:var(--text);font-style:italic;line-height:1.4;margin-bottom:'+(stickLog.length?'8':'0')+'px">'+quoteText(log.note)+'</div>' : '')
         + (stickLog.length
             ? '<div style="border-top:1px solid var(--border);padding-top:6px">'
               + stickLog.map(function(s){
