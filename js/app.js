@@ -576,7 +576,7 @@ home(el, data) {
   // Ring: seconds-sweep clock face (post-quit) or prep-phase progress
   var STREAK_GOALS = [1,3,7,14,30,90,180,365];
   var ringNumber, ringSub, ringPct, goalPillHtml, showLiveClock = false;
-  var ringR = 80, ringSize = 192;
+  var ringR = 74, ringSize = 176;
   var ringCirc = 2 * Math.PI * ringR;
   if (isPrepPhase) {
     ringNumber = daysToQuit;
@@ -598,9 +598,9 @@ home(el, data) {
     if (goalDays) {
       var prevGoal = STREAK_GOALS[STREAK_GOALS.indexOf(goalDays)-1] || 0;
       var daysToGoal = goalDays - streak;
-      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:12px">🎯 до цели: ' + daysToGoal + ' ' + wordDays(daysToGoal) + '</div>';
+      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:6px">🎯 до цели: ' + daysToGoal + ' ' + wordDays(daysToGoal) + '</div>';
     } else {
-      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:12px">🏆 Все цели по серии достигнуты</div>';
+      goalPillHtml = '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--green-light);color:var(--accent2);font-size:13px;font-weight:600;padding:6px 14px;border-radius:16px;margin-top:6px">🏆 Все цели по серии достигнуты</div>';
     }
   }
   var ringOffset = Math.round(ringCirc * (1 - ringPct/100));
@@ -620,11 +620,12 @@ home(el, data) {
 
   el.innerHTML = '<div class="screen">'
     // ── Hero ──
-    + '<div class="hero-card" style="text-align:center;padding-top:14px">'
-    + '<div style="display:flex;justify-content:flex-end">'
-    + '<div style="background:var(--accent-light);color:var(--accent);font-weight:700;font-size:13px;padding:6px 12px;border-radius:16px;display:flex;align-items:center;gap:4px;white-space:nowrap">🔥 ' + streak + ' ' + wordDays(streak) + '</div>'
+    + '<div class="hero-card" style="text-align:center;padding:12px 16px 16px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="background:var(--accent-light);color:var(--accent);font-weight:700;font-size:13px;padding:5px 11px;border-radius:14px;white-space:nowrap">🔥 ' + streak + ' ' + wordDays(streak) + '</div>'
+    + '<div role="button" onclick="App.navigate(\'achievements\')" style="font-size:13px;color:var(--text2);cursor:pointer;white-space:nowrap">🏆 ' + p.achievements.length + '/' + ACHIEVEMENTS.length + ' →</div>'
     + '</div>'
-    + '<div style="position:relative;width:' + ringSize + 'px;height:' + ringSize + 'px;margin:4px auto 4px">'
+    + '<div style="position:relative;width:' + ringSize + 'px;height:' + ringSize + 'px;margin:2px auto 0">'
     + '<svg width="' + ringSize + '" height="' + ringSize + '" viewBox="0 0 ' + ringSize + ' ' + ringSize + '" style="transform:rotate(-90deg)">'
     + '<circle cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + ringR + '" fill="none" stroke="var(--accent-light)" stroke-width="12"/>'
     + '<circle id="ring-arc" cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + ringR + '" fill="none" stroke="url(#pg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="' + ringCirc + '" stroke-dashoffset="' + ringOffset + '" style="transition:stroke-dashoffset .3s linear"/>'
@@ -639,7 +640,6 @@ home(el, data) {
           + '<div style="font-size:13px;color:var(--text2);font-weight:500;margin-top:2px">' + ringSub + '</div>')
     + '</div></div>'
     + goalPillHtml
-    + '<div style="margin-top:10px"><span role="button" onclick="App.navigate(\'achievements\')" style="font-size:13px;color:var(--text2);cursor:pointer">🏆 ' + p.achievements.length + '/' + ACHIEVEMENTS.length + ' достижений →</span></div>'
     + '</div>'
     // ── Stats (кликабельные) ──
     + '<div style="display:flex;gap:10px;margin-bottom:10px">'
@@ -897,7 +897,7 @@ exercise(el, data, exId) {
 
   var body = '';
   if(ex.type==='read'||ex.type==='metaphor'||ex.type==='reframe'||ex.type==='defusion'||ex.type==='self_compassion') {
-    var paras = ex.content.split('\n').map(function(p){return p?'<p style="margin-bottom:12px;font-size:16px;line-height:1.6">'+p+'</p>':'<br>';}).join('');
+    var paras = ex.content.split('\n').filter(function(p){return p.trim();}).map(function(p){return '<p style="margin-bottom:12px;font-size:16px;line-height:1.6">'+p+'</p>';}).join('');
     body = '<div class="card" style="margin-bottom:20px">'+paras+'</div>';
   }
   if(ex.type==='story') {
@@ -905,13 +905,13 @@ exercise(el, data, exId) {
       + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
       + '<div style="width:44px;height:44px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>'
       + '<div><div style="font-weight:700">'+ex.author+'</div><div style="color:var(--text2);font-size:13px">'+ex.device+'</div></div></div>'
-      + ex.story.split('\n').map(function(p){return p?'<p style="margin-bottom:12px;font-size:15px;line-height:1.7;color:var(--text)">'+p+'</p>':'<br>';}).join('')
+      + ex.story.split('\n').filter(function(p){return p.trim();}).map(function(p){return '<p style="margin-bottom:12px;font-size:15px;line-height:1.7;color:var(--text)">'+p+'</p>';}).join('')
       + '</div>';
   }
   if(ex.type==='timer') {
     var dur = ex.duration||120;
     body = '<div class="card" style="margin-bottom:20px;text-align:center">'
-      + ex.content.split('\n').map(function(p){return p?'<p style="margin-bottom:10px;font-size:15px;line-height:1.6;color:var(--text)">'+p+'</p>':'<br>';}).join('')
+      + ex.content.split('\n').filter(function(p){return p.trim();}).map(function(p){return '<p style="margin-bottom:10px;font-size:15px;line-height:1.6;color:var(--text)">'+p+'</p>';}).join('')
       + '<div id="timer-disp" style="font-size:48px;font-weight:800;color:var(--blue);margin:20px 0">'+Math.floor(dur/60)+':'+String(dur%60).padStart(2,'0')+'</div>'
       + '<button class="btn-primary" id="timer-btn" onclick="window._startTimer(' + dur + ')">▶ Начать таймер</button>'
       + '</div>';
@@ -1217,7 +1217,7 @@ exercise(el, data, exId) {
     var qd=u.quitDate?new Date(u.quitDate):null;
     var ds=qd?Math.max(0,Math.floor((Date.now()-qd)/86400000)):0;
     var totalExAll=LEVELS.reduce(function(s,l){return s+l.exercises.length;},0);
-    body='<div class="card" style="margin-bottom:16px;text-align:center;background:linear-gradient(135deg,#F0FFF8,#EBF4FF)">'
+    body='<div class="card" style="margin-bottom:16px;text-align:center;background:linear-gradient(150deg,#ffffff,#f0faf4)">'
       +'<div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:16px">ТВОЙ ПУТЬ</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">'
       +'<div><div style="font-size:36px;font-weight:900;color:var(--green)">'+ds+'</div><div style="color:var(--text2);font-size:12px">чистых дней</div></div>'
@@ -1326,7 +1326,7 @@ urgeHelp(el, data) {
           var letter = data.user.letterToSelf;
           return '<p style="font-size:16px;font-weight:700;margin-bottom:12px">Прежде чем взять устройство — сделай это:</p>'
             + ep.map(function(t,i){return '<div class="card card-sm" style="margin-bottom:8px;display:flex;align-items:center;gap:12px"><div style="width:28px;height:28px;border-radius:50%;background:var(--orange-light);color:var(--orange);font-weight:700;display:flex;align-items:center;justify-content:center">'+(i+1)+'</div><div style="font-size:14px">'+t+'</div></div>';}).join('')
-            + (letter ? '<div class="card" style="margin-top:12px;background:linear-gradient(135deg,#EBF4FF,#F0FFF8);border-color:rgba(91,141,239,.2)">'
+            + (letter ? '<div class="card" style="margin-top:12px;background:linear-gradient(150deg,#ffffff,#f0faf4);border-color:rgba(31,157,107,.2)">'
               +'<div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px">✉️ ПИСЬМО СЕБЕ</div>'
               +'<div style="font-size:14px;line-height:1.6;color:var(--text)">'+letter+'</div></div>' : '');
         })()
@@ -1861,7 +1861,7 @@ savings(el, data) {
     var daysSince = quitDate ? Math.max(0,Math.floor((new Date()-quitDate)/86400000)) : 0;
     el.innerHTML = '<div class="screen">'
       + '<p style="color:var(--text2);font-size:14px;margin-bottom:20px">Деньги, которые остались с тобой</p>'
-      + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(135deg,rgba(42,171,238,.12),rgba(123,97,255,.10))">'
+      + '<div class="card" style="text-align:center;margin-bottom:16px;background:linear-gradient(150deg,#ffffff,#f0faf4);border-color:rgba(31,157,107,.18)">'
       + '<div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px">УЖЕ СЭКОНОМЛЕНО</div>'
       + '<div style="font-size:48px;font-weight:900;color:var(--green)">€'+(saved<10?saved.toFixed(2):Math.round(saved))+'</div>'
       + '<div style="color:var(--text2);font-size:14px;margin-top:4px">за '+fmtDays(daysSince)+'</div>'
